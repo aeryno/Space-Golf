@@ -1,0 +1,27 @@
+{
+  "name": "space-golf",
+  "version": "1.0.0",
+  "description": "A space-themed 3D mini-golf game built with Three.js",
+  "type": "module",
+  "main": "src/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "three.js",
+    "webgl",
+    "game",
+    "mini-golf",
+    "space"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "three": "^0.160.0"
+  }
+}

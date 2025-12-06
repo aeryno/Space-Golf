@@ -1,0 +1,13 @@
+# Models Folder
+
+Place 3D models here for use in Full mode.
+
+## Supported Formats
+- GLTF (.gltf)
+- GLB (.glb)
+
+## Recommended Models
+- spacecraft.glb
+- asteroid.glb
+- space_station.glb
+- satellite.glb
