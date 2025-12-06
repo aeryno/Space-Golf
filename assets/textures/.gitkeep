@@ -1,0 +1,15 @@
+# Textures Folder
+
+Place texture images here for use in Full mode.
+
+## Supported Formats
+- PNG
+- JPG/JPEG
+- WebP
+
+## Recommended Textures
+- planet_earth.jpg
+- planet_mars.jpg
+- planet_jupiter.jpg
+- stars_skybox.jpg
+- ground_surface.jpg
