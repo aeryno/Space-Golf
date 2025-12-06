@@ -67,7 +67,7 @@ export class DroneManager {
             prop1.position.y = 0.5;
             group.add(prop1);
             
-            const prop2 = new THREE.Mesh(propGeometry.clone(), propMaterial);
+            const prop2 = new THREE.Mesh(propGeometry, propMaterial);
             prop2.position.y = 0.5;
             prop2.rotation.y = Math.PI / 2;
             group.add(prop2);
@@ -186,7 +186,9 @@ export class DroneManager {
         }
         
         // Calculate velocity for collision physics
-        drone.velocity.subVectors(drone.mesh.position, prevPos).divideScalar(delta);
+        if (delta > 0) {
+            drone.velocity.subVectors(drone.mesh.position, prevPos).divideScalar(delta);
+        }
         
         // Face movement direction
         if (drone.velocity.length() > 0.1) {

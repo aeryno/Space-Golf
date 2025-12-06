@@ -133,7 +133,9 @@ export class ObstacleManager {
             }
             
             // Calculate velocity for collision physics
-            obstacle.velocity.subVectors(obstacle.mesh.position, prevPos).divideScalar(delta);
+            if (delta > 0) {
+                obstacle.velocity.subVectors(obstacle.mesh.position, prevPos).divideScalar(delta);
+            }
             
             // Rotate obstacle
             obstacle.mesh.rotation.x += delta * 0.5;

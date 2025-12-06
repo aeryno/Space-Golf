@@ -325,10 +325,9 @@ export class Course {
     }
     
     checkHoleCollision(ballPosition) {
-        const distance = new THREE.Vector2(
-            ballPosition.x - this.holePosition.x,
-            ballPosition.z - this.holePosition.z
-        ).length();
+        const dx = ballPosition.x - this.holePosition.x;
+        const dz = ballPosition.z - this.holePosition.z;
+        const distance = Math.sqrt(dx * dx + dz * dz);
         
         return distance < this.holeRadius * 0.8;
     }
