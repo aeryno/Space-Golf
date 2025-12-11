@@ -4,9 +4,10 @@
  */
 
 export class InputHandler {
-    constructor(ball, cameraController) {
+    constructor(ball, cameraController, game = null) {
         this.ball = ball;
         this.cameraController = cameraController;
+        this.game = game;
         
         // Aim state
         this.aimAngle = 0;
@@ -203,15 +204,19 @@ export class InputHandler {
         this.isCharging = false;
         this.power = 0;
         
-        // Notify game of stroke (could emit event in a more complex system)
-        const game = window.gameInstance;
-        if (game && game.onStroke) {
-            game.onStroke();
+        // Notify game of stroke
+        if (this.game && this.game.onStroke) {
+            this.game.onStroke();
         }
     }
     
     getPower() {
         return this.power;
+    }
+    
+    isAiming() {
+        // Show arrow when player is using arrow keys or charging power
+        return this.keys.left || this.keys.right || this.isCharging || this.isTouching;
     }
     
     setBall(ball) {

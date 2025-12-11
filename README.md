@@ -15,7 +15,6 @@ A space-themed 3D mini-golf game built with Three.js.
 - **Game Elements**:
   - 9 unique holes with increasing difficulty
   - Animated moving obstacles (oscillating, circular motion)
-  - NPC drones on harder levels (hole 5+) that push the ball
 
 ## Getting Started
 
@@ -54,8 +53,7 @@ Space-Golf/
 │       ├── ball.js     # Ball physics and rendering
 │       ├── course.js   # Course/hole generation
 │       ├── input.js    # Keyboard and touch input
-│       ├── obstacles.js # Animated moving obstacles
-│       └── drones.js   # NPC drone enemies
+│       └── obstacles.js # Animated moving obstacles
 └── assets/
     ├── textures/       # Texture images for full mode
     └── models/         # 3D models for full mode
@@ -77,7 +75,7 @@ Space-Golf/
 1. Use the arrow keys or touch controls to aim your shot
 2. Hold Space (or the shoot button) to charge your shot power
 3. Release to hit the ball
-4. Avoid moving obstacles and NPC drones
+4. Avoid moving obstacles
 5. Get the ball into the hole in as few strokes as possible
 
 ## Technologies

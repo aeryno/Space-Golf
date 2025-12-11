@@ -10,6 +10,8 @@ export class Course {
         this.scene = scene;
         this.mode = mode;
         this.objects = [];
+        this.walls = []; // Store wall objects for collision detection
+        this.currentHoleNumber = 1;
         
         // Course data
         this.startPosition = new THREE.Vector3(0, 0, 0);
@@ -17,13 +19,14 @@ export class Course {
         this.holeRadius = 1.5;
         this.par = 3;
         
-        // Bounds
-        this.minBounds = new THREE.Vector3(-50, -10, -50);
-        this.maxBounds = new THREE.Vector3(50, 50, 50);
+        // Bounds - more restrictive for out-of-bounds detection
+        this.minBounds = new THREE.Vector3(-30, -10, -30);
+        this.maxBounds = new THREE.Vector3(30, 20, 30);
     }
     
     createHole(holeNumber) {
         this.clearCourse();
+        this.currentHoleNumber = holeNumber; // Store current hole number
         
         // Get hole configuration
         const holeConfig = this.getHoleConfig(holeNumber);
@@ -53,8 +56,8 @@ export class Course {
             },
             { // Hole 2 - Slight curve
                 par: 3,
-                start: new THREE.Vector3(-15, 0, 15),
-                hole: new THREE.Vector3(15, 0, -15),
+                start: new THREE.Vector3(-15, 0, 10),
+                hole: new THREE.Vector3(12, 0, -12),
                 groundSize: { width: 40, depth: 40 },
                 groundShape: 'L'
             },
@@ -65,12 +68,12 @@ export class Course {
                 groundSize: { width: 20, depth: 60 },
                 groundShape: 'rectangle'
             },
-            { // Hole 4 - Multiple platforms
-                par: 4,
-                start: new THREE.Vector3(-20, 0, 20),
-                hole: new THREE.Vector3(20, 0, -20),
-                groundSize: { width: 50, depth: 50 },
-                groundShape: 'scattered'
+            { // Hole 4 - Donut shaped course
+                par: 3,
+                start: new THREE.Vector3(0, 0, 25),
+                hole: new THREE.Vector3(0, 0, -25),
+                groundSize: { outerRadius: 30, innerRadius: 12 },
+                groundShape: 'donut'
             },
             { // Hole 5 - With drones (harder)
                 par: 4,
@@ -134,11 +137,7 @@ export class Course {
         
         switch (config.groundShape) {
             case 'circular':
-                geometry = new THREE.RingGeometry(
-                    config.groundSize.radius - 10,
-                    config.groundSize.radius,
-                    32
-                );
+                geometry = new THREE.CircleGeometry(config.groundSize.radius, 32);
                 const circleMesh = new THREE.Mesh(geometry, material);
                 circleMesh.rotation.x = -Math.PI / 2;
                 circleMesh.receiveShadow = true;
@@ -154,16 +153,53 @@ export class Course {
                 break;
                 
             case 'scattered':
-                // Multiple platform pieces
-                for (let i = 0; i < 5; i++) {
-                    const x = (Math.random() - 0.5) * config.groundSize.width;
-                    const z = (Math.random() - 0.5) * config.groundSize.depth;
-                    const size = 8 + Math.random() * 10;
-                    this.createBox(x, -0.5, z, size, 1, size, material);
+                // Create connected stepping stone platforms from start to hole
+                const startX = config.start.x;
+                const startZ = config.start.z;
+                const holeX = config.hole.x;
+                const holeZ = config.hole.z;
+                
+                // Store platform info for wall creation
+                config.scatteredPlatforms = [];
+                
+                // Create start platform
+                this.createBox(startX, -0.5, startZ, 12, 1, 12, material);
+                config.scatteredPlatforms.push({x: startX, z: startZ, size: 12});
+                
+                // Create intermediate stepping stones in a path
+                const numSteps = 4;
+                for (let i = 1; i <= numSteps; i++) {
+                    const progress = i / (numSteps + 1);
+                    const x = startX + (holeX - startX) * progress;
+                    const z = startZ + (holeZ - startZ) * progress;
+                    // Add some variation but keep platforms reachable
+                    const offsetX = (Math.random() - 0.5) * 8;
+                    const offsetZ = (Math.random() - 0.5) * 8;
+                    const size = 10 + Math.random() * 4; // 10-14 unit platforms
+                    const finalX = x + offsetX;
+                    const finalZ = z + offsetZ;
+                    this.createBox(finalX, -0.5, finalZ, size, 1, size, material);
+                    config.scatteredPlatforms.push({x: finalX, z: finalZ, size: size});
                 }
-                // Ensure start and end platforms
-                this.createBox(config.start.x, -0.5, config.start.z, 10, 1, 10, material);
-                this.createBox(config.hole.x, -0.5, config.hole.z, 10, 1, 10, material);
+                
+                // Create hole platform
+                this.createBox(holeX, -0.5, holeZ, 12, 1, 12, material);
+                config.scatteredPlatforms.push({x: holeX, z: holeZ, size: 12});
+                break;
+                
+            case 'donut':
+                // Create donut/ring shaped course
+                geometry = new THREE.RingGeometry(
+                    config.groundSize.innerRadius,
+                    config.groundSize.outerRadius,
+                    32
+                );
+                const donutMesh = new THREE.Mesh(geometry, material);
+                donutMesh.rotation.x = -Math.PI / 2;
+                donutMesh.position.y = -0.5;
+                donutMesh.receiveShadow = true;
+                this.scene.add(donutMesh);
+                this.objects.push(donutMesh);
                 break;
                 
             default:
@@ -182,6 +218,11 @@ export class Course {
         
         // Add edges/borders
         this.createBorders(config);
+        
+        // Add boundary walls
+        console.log('Creating boundary walls for hole:', this.currentHoleNumber, 'shape:', config.groundShape);
+        this.createBoundaryWalls(config);
+        console.log('Total walls created:', this.walls.length);
     }
     
     createBox(x, y, z, width, height, depth, material) {
@@ -194,43 +235,256 @@ export class Course {
         return mesh;
     }
     
+    createWallBox(x, y, z, width, height, depth, material) {
+        const geometry = new THREE.BoxGeometry(width, height, depth);
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.set(x, y, z);
+        mesh.receiveShadow = true;
+        
+        // Store wall properties for collision detection
+        mesh.isWall = true;
+        mesh.wallWidth = width;
+        mesh.wallHeight = height;
+        mesh.wallDepth = depth;
+        
+        console.log('Created wall at:', x, y, z, 'dimensions:', width, height, depth);
+        
+        this.scene.add(mesh);
+        this.objects.push(mesh);
+        this.walls.push(mesh); // Add to walls array for collision checking
+        return mesh;
+    }
+    
     createBorders(config) {
-        const borderMaterial = new THREE.MeshStandardMaterial({
-            color: this.mode === 'prototype' ? 0x444444 : 0x4a00e0,
-            roughness: 0.5,
-            metalness: 0.5
-        });
+        // No borders - removed all borders from every hole
+        return;
+    }
+    
+    createBoundaryWalls(config) {
+        // No walls - removed all boundary walls from every hole
+        return;
+    }
+    
+    createRectangularWalls(config, material, height, thickness) {
+        const w = config.groundSize.width;
+        const d = config.groundSize.depth;
         
-        const borderHeight = 0.5;
-        const borderThickness = 0.3;
+        // Left wall
+        this.createWallBox(-w/2 - thickness/2, height/2, 0, thickness, height, d + thickness, material);
+        // Right wall
+        this.createWallBox(w/2 + thickness/2, height/2, 0, thickness, height, d + thickness, material);
+        // Back wall
+        this.createWallBox(0, height/2, -d/2 - thickness/2, w + thickness*2, height, thickness, material);
+        // Front wall
+        this.createWallBox(0, height/2, d/2 + thickness/2, w + thickness*2, height, thickness, material);
+    }
+    
+    createCircularWalls(config, material, height, thickness) {
+        const radius = config.groundSize.radius;
+        const segments = 48; // Increased for smoother curves
         
-        if (config.groundShape === 'rectangle' || config.groundShape === 'narrow' || config.groundShape === 'split') {
-            const w = config.groundSize.width;
-            const d = config.groundSize.depth;
+        for (let i = 0; i < segments; i++) {
+            const angle1 = (i / segments) * Math.PI * 2;
+            const angle2 = ((i + 1) / segments) * Math.PI * 2 + 0.01; // Small overlap to prevent gaps
             
-            // Left border
-            this.createBox(-w/2 - borderThickness/2, borderHeight/2, 0, borderThickness, borderHeight, d, borderMaterial);
-            // Right border
-            this.createBox(w/2 + borderThickness/2, borderHeight/2, 0, borderThickness, borderHeight, d, borderMaterial);
-            // Back border
-            this.createBox(0, borderHeight/2, -d/2 - borderThickness/2, w, borderHeight, borderThickness, borderMaterial);
-            // Front border (with gap for start)
-            this.createBox(0, borderHeight/2, d/2 + borderThickness/2, w, borderHeight, borderThickness, borderMaterial);
+            const x1 = Math.cos(angle1) * (radius + thickness/2);
+            const z1 = Math.sin(angle1) * (radius + thickness/2);
+            const x2 = Math.cos(angle2) * (radius + thickness/2);
+            const z2 = Math.sin(angle2) * (radius + thickness/2);
+            
+            const midX = (x1 + x2) / 2;
+            const midZ = (z1 + z2) / 2;
+            
+            const wallLength = Math.sqrt((x2-x1)*(x2-x1) + (z2-z1)*(z2-z1));
+            const wallAngle = Math.atan2(z2-z1, x2-x1);
+            
+            const wallGeometry = new THREE.BoxGeometry(wallLength, height, thickness);
+            const wall = new THREE.Mesh(wallGeometry, material);
+            wall.position.set(midX, height/2, midZ);
+            wall.rotation.y = wallAngle;
+            
+            // Store wall properties for collision detection
+            wall.isWall = true;
+            wall.wallWidth = wallLength;
+            wall.wallHeight = height;
+            wall.wallDepth = thickness;
+            
+            this.scene.add(wall);
+            this.objects.push(wall);
+            this.walls.push(wall); // Add to walls array for collision checking
         }
+    }
+    
+    createLShapeWalls(config, material, height, thickness) {
+        const w = config.groundSize.width;
+        const d = config.groundSize.depth;
+        
+        // Main section walls
+        this.createWallBox(-w/4 - thickness/2, height/2, 0, thickness, height, d*0.6 + thickness, material);
+        this.createWallBox(w/4 + thickness/2, height/2, 0, thickness, height, d*0.6 + thickness, material);
+        this.createWallBox(0, height/2, -d*0.3 - thickness/2, w/2 + thickness*2, height, thickness, material);
+        this.createWallBox(0, height/2, d*0.3 + thickness/2, w/2 + thickness*2, height, thickness, material);
+        
+        // Extension section walls
+        const extW = w * 0.6;
+        const extD = d * 0.4;
+        const extX = w * 0.3;
+        const extZ = -d * 0.3;
+        
+        this.createWallBox(extX - extW/2 - thickness/2, height/2, extZ, thickness, height, extD + thickness, material);
+        this.createWallBox(extX + extW/2 + thickness/2, height/2, extZ, thickness, height, extD + thickness, material);
+        this.createWallBox(extX, height/2, extZ - extD/2 - thickness/2, extW + thickness*2, height, thickness, material);
+        this.createWallBox(extX, height/2, extZ + extD/2 + thickness/2, extW + thickness*2, height, thickness, material);
+    }
+    
+    createDonutWalls(config, material, height, thickness) {
+        const innerRadius = config.groundSize.innerRadius;
+        const segments = 48; // Increased for smoother curves
+        
+        // Create inner ring of walls - barriers facing outward from center
+        for (let i = 0; i < segments; i++) {
+            const angle1 = (i / segments) * Math.PI * 2;
+            const angle2 = ((i + 1) / segments) * Math.PI * 2 + 0.01; // Small overlap to prevent gaps
+            
+            const x1 = Math.cos(angle1) * (innerRadius - thickness/2);
+            const z1 = Math.sin(angle1) * (innerRadius - thickness/2);
+            const x2 = Math.cos(angle2) * (innerRadius - thickness/2);
+            const z2 = Math.sin(angle2) * (innerRadius - thickness/2);
+            
+            const centerX = (x1 + x2) / 2;
+            const centerZ = (z1 + z2) / 2;
+            const wallLength = Math.sqrt((x2-x1)**2 + (z2-z1)**2);
+            const wallAngle = Math.atan2(z2-z1, x2-x1);
+            
+            const wall = new THREE.Mesh(
+                new THREE.BoxGeometry(wallLength, height, thickness),
+                material
+            );
+            wall.position.set(centerX, height/2, centerZ);
+            wall.rotation.y = wallAngle;
+            wall.receiveShadow = true;
+            
+            wall.isWall = true;
+            wall.wallWidth = wallLength;
+            wall.wallHeight = height;
+            wall.wallDepth = thickness;
+            
+            this.scene.add(wall);
+            this.objects.push(wall);
+            this.walls.push(wall);
+        }
+    }
+    
+    createScatteredWalls(config, material, height, thickness) {
+        // Create walls around all scattered platforms, avoiding overlaps
+        if (config.scatteredPlatforms) {
+            this.createNonOverlappingPlatformWalls(config.scatteredPlatforms, material, height, thickness);
+        } else {
+            // Fallback for older scattered course format
+            this.createPlatformWalls(config.start.x, config.start.z, 10, material, height, thickness);
+            this.createPlatformWalls(config.hole.x, config.hole.z, 10, material, height, thickness);
+        }
+    }
+    
+    createNonOverlappingPlatformWalls(platforms, material, height, thickness) {
+        // Track wall segments to avoid overlaps
+        const wallSegments = [];
+        
+        for (const platform of platforms) {
+            const x = platform.x;
+            const z = platform.z;
+            const halfSize = platform.size / 2;
+            
+            // Define potential wall positions for this platform
+            const potentialWalls = [
+                { // Left wall
+                    x: x - halfSize - thickness/2,
+                    z: z,
+                    width: thickness,
+                    depth: platform.size + thickness,
+                    orientation: 'vertical'
+                },
+                { // Right wall
+                    x: x + halfSize + thickness/2,
+                    z: z,
+                    width: thickness,
+                    depth: platform.size + thickness,
+                    orientation: 'vertical'
+                },
+                { // Back wall
+                    x: x,
+                    z: z - halfSize - thickness/2,
+                    width: platform.size + thickness*2,
+                    depth: thickness,
+                    orientation: 'horizontal'
+                },
+                { // Front wall
+                    x: x,
+                    z: z + halfSize + thickness/2,
+                    width: platform.size + thickness*2,
+                    depth: thickness,
+                    orientation: 'horizontal'
+                }
+            ];
+            
+            // Check each wall against existing walls and only create if no overlap
+            for (const wall of potentialWalls) {
+                if (!this.wallOverlaps(wall, wallSegments)) {
+                    this.createWallBox(wall.x, height/2, wall.z, wall.width, height, wall.depth, material);
+                    wallSegments.push(wall);
+                }
+            }
+        }
+    }
+    
+    wallOverlaps(newWall, existingWalls) {
+        for (const existing of existingWalls) {
+            // Check for overlap - walls overlap if they intersect in both x and z dimensions
+            const newLeft = newWall.x - newWall.width/2;
+            const newRight = newWall.x + newWall.width/2;
+            const newBack = newWall.z - newWall.depth/2;
+            const newFront = newWall.z + newWall.depth/2;
+            
+            const existingLeft = existing.x - existing.width/2;
+            const existingRight = existing.x + existing.width/2;
+            const existingBack = existing.z - existing.depth/2;
+            const existingFront = existing.z + existing.depth/2;
+            
+            // Check if rectangles overlap
+            const xOverlap = !(newRight <= existingLeft || newLeft >= existingRight);
+            const zOverlap = !(newFront <= existingBack || newBack >= existingFront);
+            
+            if (xOverlap && zOverlap) {
+                return true; // Overlap detected
+            }
+        }
+        return false; // No overlap
+    }
+    
+    createPlatformWalls(x, z, size, material, height, thickness) {
+        const halfSize = size / 2;
+        // Left wall
+        this.createWallBox(x - halfSize - thickness/2, height/2, z, thickness, height, size + thickness, material);
+        // Right wall  
+        this.createWallBox(x + halfSize + thickness/2, height/2, z, thickness, height, size + thickness, material);
+        // Back wall
+        this.createWallBox(x, height/2, z - halfSize - thickness/2, size + thickness*2, height, thickness, material);
+        // Front wall
+        this.createWallBox(x, height/2, z + halfSize + thickness/2, size + thickness*2, height, thickness, material);
     }
     
     createHoleMesh() {
         // Create the hole (flag and cup)
         const cupGeometry = new THREE.CylinderGeometry(this.holeRadius, this.holeRadius, 0.5, 32);
         const cupMaterial = new THREE.MeshStandardMaterial({
-            color: this.mode === 'prototype' ? 0x000000 : 0xff00ff,
+            color: 0x000000, // Solid black for both modes
             roughness: 0.3,
             metalness: 0.7
         });
         
         const cup = new THREE.Mesh(cupGeometry, cupMaterial);
         cup.position.copy(this.holePosition);
-        cup.position.y = -0.25;
+        cup.position.y = -0.1; // Raised from -0.25 to -0.1 to prevent green poking through
         this.scene.add(cup);
         this.objects.push(cup);
         
@@ -324,6 +578,11 @@ export class Course {
         return this.par;
     }
     
+    getWalls() {
+        console.log('Getting walls, count:', this.walls.length);
+        return this.walls;
+    }
+    
     checkHoleCollision(ballPosition) {
         const dx = ballPosition.x - this.holePosition.x;
         const dz = ballPosition.z - this.holePosition.z;
@@ -335,12 +594,142 @@ export class Course {
     checkBounds(ball) {
         const pos = ball.getPosition();
         
-        // Reset ball if it goes out of bounds
-        if (pos.x < this.minBounds.x || pos.x > this.maxBounds.x ||
-            pos.y < this.minBounds.y ||
-            pos.z < this.minBounds.z || pos.z > this.maxBounds.z) {
-            ball.setPosition(this.startPosition);
+        // Check bounds based on course shape and wall positions
+        const holeConfig = this.getHoleConfig(this.getCurrentHole());
+        
+        switch (holeConfig.groundShape) {
+            case 'rectangle':
+            case 'narrow':
+            case 'split':
+                return this.checkRectangularBounds(pos, holeConfig);
+            case 'circular':
+                return this.checkCircularBounds(pos, holeConfig);
+            case 'L':
+                return this.checkLShapeBounds(pos, holeConfig);
+            case 'scattered':
+                return this.checkScatteredBounds(pos, holeConfig);
+            case 'donut':
+                return this.checkDonutBounds(pos, holeConfig);
+            default:
+                return this.checkRectangularBounds(pos, holeConfig);
         }
+    }
+    
+    getCurrentHole() {
+        return this.currentHoleNumber || 1;
+    }
+    
+    checkRectangularBounds(pos, config) {
+        const w = config.groundSize.width;
+        const d = config.groundSize.depth;
+        const wallThickness = 0.3;
+        const wallHeight = 0.8;
+        const safetyMargin = 2.0; // Only restart if ball goes well beyond walls
+        
+        // Check if ball is significantly beyond walls (not just touching)
+        const wayBeyondWalls = (pos.x < -w/2 - wallThickness - safetyMargin ||
+                               pos.x > w/2 + wallThickness + safetyMargin ||
+                               pos.z < -d/2 - wallThickness - safetyMargin ||
+                               pos.z > d/2 + wallThickness + safetyMargin);
+        
+        // Ball is out if way beyond walls AND below wall height, or if it falls way below
+        if ((wayBeyondWalls && pos.y <= wallHeight) || pos.y < -5) {
+            return true;
+        }
+        return false;
+    }
+    
+    checkCircularBounds(pos, config) {
+        const radius = config.groundSize.radius;
+        const wallThickness = 0.3;
+        const wallHeight = 0.8;
+        const safetyMargin = 2.0; // Only restart if ball goes well beyond wall
+        
+        // Calculate distance from center
+        const distance = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
+        
+        // Check if ball is significantly beyond circular wall
+        const wayBeyondWall = distance > radius + wallThickness + safetyMargin;
+        
+        // Ball is out if way beyond wall AND below wall height, or falls way below
+        if ((wayBeyondWall && pos.y <= wallHeight) || pos.y < -5) {
+            return true;
+        }
+        return false;
+    }
+    
+    checkLShapeBounds(pos, config) {
+        const w = config.groundSize.width;
+        const d = config.groundSize.depth;
+        const wallThickness = 0.3;
+        const wallHeight = 0.8;
+        const safetyMargin = 8.0; // Only restart if ball goes well beyond walls
+        
+        // Check if in main section (with safety margin)
+        const inMainSection = (pos.x >= -w/4 - wallThickness - safetyMargin && pos.x <= w/4 + wallThickness + safetyMargin &&
+                              pos.z >= -d*0.3 - wallThickness - safetyMargin && pos.z <= d*0.3 + wallThickness + safetyMargin);
+        
+        // Check if in extension section (with safety margin)
+        const extW = w * 0.6;
+        const extD = d * 0.4;
+        const extX = w * 0.3;
+        const extZ = -d * 0.3;
+        const inExtSection = (pos.x >= extX - extW/2 - wallThickness - safetyMargin && pos.x <= extX + extW/2 + wallThickness + safetyMargin &&
+                             pos.z >= extZ - extD/2 - wallThickness - safetyMargin && pos.z <= extZ + extD/2 + wallThickness + safetyMargin);
+        
+        // Ball is way outside bounds only if not in either expanded section
+        const wayOutsideBounds = !inMainSection && !inExtSection;
+        
+        // Ball is out if way outside bounds AND below wall height, or falls way below
+        if ((wayOutsideBounds && pos.y <= wallHeight) || pos.y < -5) {
+            return true;
+        }
+        return false;
+    }
+    
+    checkScatteredBounds(pos, config) {
+        const wallThickness = 0.3;
+        const platformSize = 10;
+        const wallHeight = 0.8;
+        const safetyMargin = 3.0; // Larger safety margin for scattered platforms
+        
+        // Check if near start platform (with safety margin)
+        const nearStart = (Math.abs(pos.x - config.start.x) <= platformSize/2 + wallThickness + safetyMargin &&
+                          Math.abs(pos.z - config.start.z) <= platformSize/2 + wallThickness + safetyMargin);
+        
+        // Check if near hole platform (with safety margin)
+        const nearHole = (Math.abs(pos.x - config.hole.x) <= platformSize/2 + wallThickness + safetyMargin &&
+                         Math.abs(pos.z - config.hole.z) <= platformSize/2 + wallThickness + safetyMargin);
+        
+        // For scattered courses, be even more lenient - only restart if extremely far
+        const extremelyFarOut = (Math.abs(pos.x) > 50 || Math.abs(pos.z) > 50);
+        
+        // Ball is out if extremely far AND below wall height, or falls way below
+        if ((extremelyFarOut && pos.y <= wallHeight) || pos.y < -5) {
+            return true;
+        }
+        return false;
+    }
+    
+    checkDonutBounds(pos, config) {
+        const outerRadius = config.groundSize.outerRadius;
+        const innerRadius = config.groundSize.innerRadius;
+        const wallThickness = 0.3;
+        const wallHeight = 0.8;
+        const safetyMargin = 8.0; // Large safety margin to prevent premature restarts
+        
+        // Calculate distance from center
+        const distanceFromCenter = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
+        
+        // Ball is in bounds if it's in the donut ring (plus safety margin)
+        const inDonutRing = (distanceFromCenter >= innerRadius - wallThickness - safetyMargin) && 
+                           (distanceFromCenter <= outerRadius + wallThickness + safetyMargin);
+        
+        // Ball is out if outside the donut ring AND below wall height, or falls way below
+        if ((!inDonutRing && pos.y <= wallHeight) || pos.y < -5) {
+            return true;
+        }
+        return false;
     }
     
     clearCourse() {
@@ -350,6 +739,7 @@ export class Course {
             if (obj.material) obj.material.dispose();
         }
         this.objects = [];
+        this.walls = []; // Clear walls array too
     }
     
     dispose() {
