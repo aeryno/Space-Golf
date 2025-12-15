@@ -13,7 +13,7 @@ import { ObstacleManager } from './obstacles.js';
 export class Game {
     constructor(canvas) {
         this.canvas = canvas;
-        this.mode = 'prototype'; // 'prototype' or 'full'
+        this.mode = 'full'; // 'prototype' or 'full' - default to full mode
         this.isRunning = false;
         this.clock = new THREE.Clock();
         
@@ -201,6 +201,55 @@ export class Game {
         this.createAimArrow();
     }
     
+    handleDonutCenterCollision() {
+        // Reset ball to start position
+        this.ball.setPosition(this.course.getStartPosition());
+        
+        // Reset obstacles (they might have moved)
+        this.obstacleManager.dispose();
+        this.obstacleManager = new ObstacleManager(this.scene, this.mode);
+        this.obstacleManager.createObstacles(this.currentHole);
+        
+        // Reset aim arrow visibility
+        if (this.aimArrow) {
+            this.aimArrow.visible = false;
+        }
+        if (this.aimArrowStem) {
+            this.aimArrowStem.visible = false;
+        }
+        
+        console.log('Level restarted - ball fell through donut center');
+        
+        // Show custom donut center message
+        this.showDonutCenterMessage();
+    }
+    
+    showDonutCenterMessage() {
+        const messageEl = document.getElementById('restart-message');
+        if (messageEl) {
+            messageEl.innerHTML = '🍩 Ball fell through center! You must navigate around the ring.';
+            messageEl.style.background = 'rgba(139, 69, 19, 0.9)';
+            messageEl.style.border = '3px solid #daa520';
+            messageEl.style.boxShadow = '0 0 20px rgba(218, 165, 32, 0.5)';
+            messageEl.style.display = 'block';
+            this.makeMessageClickable(messageEl);
+            
+            // Also hide automatically after 3 seconds if not clicked
+            setTimeout(() => {
+                if (messageEl.style.display !== 'none') {
+                    messageEl.style.display = 'none';
+                    messageEl.style.cursor = 'default';
+                    messageEl.style.pointerEvents = 'none';
+                    // Reset to original styling for regular out of bounds messages
+                    messageEl.innerHTML = 'Ball went out of bounds! Level restarted.';
+                    messageEl.style.background = 'rgba(255, 0, 0, 0.8)';
+                    messageEl.style.border = 'none';
+                    messageEl.style.boxShadow = 'none';
+                }
+            }, 3000);
+        }
+    }
+    
     start() {
         this.isRunning = true;
         this.gameLoop();
@@ -250,12 +299,35 @@ export class Game {
     }
     
     checkCollisions() {
+        // Check if ball enters the center hole on hole 6 (donut course)
+        if (this.currentHole === 6) {
+            const ballPos = this.ball.mesh.position;
+            const distanceFromCenter = Math.sqrt(ballPos.x * ballPos.x + ballPos.z * ballPos.z);
+            
+            // If ball enters the center hole (inner radius is 12), treat as out of bounds
+            if (distanceFromCenter < 12) {
+                console.log('DONUT CENTER COLLISION! Ball fell through center hole at distance:', distanceFromCenter.toFixed(2));
+                this.handleDonutCenterCollision();
+                return; // Exit early to prevent other collisions
+            }
+        }
+        
         // Check obstacle collisions
         const obstacles = this.obstacleManager.getObstacles();
         for (const obstacle of obstacles) {
-            if (this.ball.checkCollision(obstacle)) {
-                console.log('OBSTACLE COLLISION! Ball bouncing off obstacle at:', obstacle.mesh.position.x.toFixed(2), obstacle.mesh.position.z.toFixed(2));
-                this.ball.handleCollision(obstacle);
+            if (obstacle.isBlackHole) {
+                // Check black hole collision - if touched, return to start
+                if (this.ball.checkCollision(obstacle)) {
+                    console.log('BLACK HOLE COLLISION! Ball absorbed at:', obstacle.mesh.position.x.toFixed(2), obstacle.mesh.position.z.toFixed(2));
+                    this.handleBlackHoleCollision();
+                    return; // Exit early to prevent other collisions
+                }
+            } else {
+                // Normal obstacle collision
+                if (this.ball.checkCollision(obstacle)) {
+                    console.log('OBSTACLE COLLISION! Ball bouncing off obstacle at:', obstacle.mesh.position.x.toFixed(2), obstacle.mesh.position.z.toFixed(2));
+                    this.ball.handleCollision(obstacle);
+                }
             }
         }
         
@@ -408,13 +480,90 @@ export class Game {
         this.showRestartMessage();
     }
     
+    makeMessageClickable(messageEl) {
+        // Make message clickable to dismiss instantly
+        if (messageEl) {
+            // Enable pointer events so the element can be clicked
+            messageEl.style.pointerEvents = 'auto';
+            
+            const clickHandler = () => {
+                messageEl.style.display = 'none';
+                messageEl.style.pointerEvents = 'none'; // Reset to original state
+                messageEl.removeEventListener('click', clickHandler);
+                messageEl.style.cursor = 'default';
+            };
+            
+            messageEl.addEventListener('click', clickHandler);
+            messageEl.style.cursor = 'pointer';
+            messageEl.style.userSelect = 'none'; // Prevent text selection
+        }
+    }
+    
     showRestartMessage() {
         const messageEl = document.getElementById('restart-message');
         if (messageEl) {
             messageEl.style.display = 'block';
+            this.makeMessageClickable(messageEl);
+            
+            // Also hide after 2 seconds automatically if not clicked
             setTimeout(() => {
-                messageEl.style.display = 'none';
-            }, 2000); // Hide after 2 seconds
+                if (messageEl.style.display !== 'none') {
+                    messageEl.style.display = 'none';
+                    messageEl.style.cursor = 'default';
+                    messageEl.style.pointerEvents = 'none';
+                }
+            }, 2000);
+        }
+    }
+    
+    handleBlackHoleCollision() {
+        // Stop the ball immediately
+        this.ball.velocity.set(0, 0, 0);
+        this.ball.isMoving = false;
+        
+        // Show black hole message
+        this.showBlackHoleMessage();
+        
+        // Move ball back to start position after a short delay
+        setTimeout(() => {
+            const startPos = this.course.getStartPosition();
+            this.ball.setPosition(startPos);
+            
+            // Reset aim arrow visibility
+            if (this.aimArrow) {
+                this.aimArrow.visible = false;
+            }
+            if (this.aimArrowStem) {
+                this.aimArrowStem.visible = false;
+            }
+            
+            console.log('Ball returned to start position after black hole collision');
+        }, 500);
+    }
+    
+    showBlackHoleMessage() {
+        const messageEl = document.getElementById('restart-message');
+        if (messageEl) {
+            messageEl.innerHTML = '🕳️ Absorbed by Black Hole! Ball returned to start.';
+            messageEl.style.background = 'rgba(0, 0, 0, 0.9)';
+            messageEl.style.border = '3px solid #ff4400';
+            messageEl.style.boxShadow = '0 0 20px rgba(255, 68, 0, 0.5)';
+            messageEl.style.display = 'block';
+            this.makeMessageClickable(messageEl);
+            
+            // Also hide automatically after 3 seconds if not clicked
+            setTimeout(() => {
+                if (messageEl.style.display !== 'none') {
+                    messageEl.style.display = 'none';
+                    messageEl.style.cursor = 'default';
+                    messageEl.style.pointerEvents = 'none';
+                    // Reset to original styling for regular out of bounds messages
+                    messageEl.innerHTML = 'Ball went out of bounds! Level restarted.';
+                    messageEl.style.background = 'rgba(255, 0, 0, 0.8)';
+                    messageEl.style.border = 'none';
+                    messageEl.style.boxShadow = 'none';
+                }
+            }, 3000);
         }
     }
     
@@ -449,10 +598,15 @@ export class Game {
             
             // Show the message
             messageEl.style.display = 'block';
+            this.makeMessageClickable(messageEl);
             
-            // Hide after 3.5 seconds
+            // Also hide after 3.5 seconds automatically if not clicked
             setTimeout(() => {
-                messageEl.style.display = 'none';
+                if (messageEl.style.display !== 'none') {
+                    messageEl.style.display = 'none';
+                    messageEl.style.cursor = 'default';
+                    messageEl.style.pointerEvents = 'none';
+                }
             }, 3500);
         }
     }

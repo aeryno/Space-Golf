@@ -82,12 +82,12 @@ export class Course {
                 groundSize: { width: 25, depth: 70 },
                 groundShape: 'narrow'
             },
-            { // Hole 6 - Asteroid field
+            { // Hole 6 - Donut course (like hole 4)
                 par: 4,
-                start: new THREE.Vector3(-25, 0, 25),
-                hole: new THREE.Vector3(25, 0, -25),
-                groundSize: { width: 60, depth: 60 },
-                groundShape: 'asteroid'
+                start: new THREE.Vector3(0, 0, 25),
+                hole: new THREE.Vector3(0, 0, -25),
+                groundSize: { outerRadius: 30, innerRadius: 12 },
+                groundShape: 'donut'
             },
             { // Hole 7 - Wormhole jump
                 par: 5,
@@ -125,13 +125,13 @@ export class Course {
                 metalness: 0.2
             });
         } else {
-            // Space-themed purple/blue surface
+            // Space-themed brighter purple surface
             material = new THREE.MeshStandardMaterial({
-                color: 0x1a0a3e,
-                roughness: 0.6,
-                metalness: 0.4,
-                emissive: 0x110022,
-                emissiveIntensity: 0.1
+                color: 0x4d1a99, // Brighter purple
+                roughness: 0.4,
+                metalness: 0.3,
+                emissive: 0x330055, // Brighter emissive glow
+                emissiveIntensity: 0.3
             });
         }
         
@@ -200,6 +200,33 @@ export class Course {
                 donutMesh.receiveShadow = true;
                 this.scene.add(donutMesh);
                 this.objects.push(donutMesh);
+                break;
+                
+            case 'star':
+                // Create star-shaped course with 5 points
+                const starShape = new THREE.Shape();
+                const outerRadius = config.groundSize.outerRadius;
+                const innerRadius = config.groundSize.innerRadius;
+                const points = 5;
+                
+                // Start at the first outer point
+                starShape.moveTo(0, outerRadius);
+                
+                for (let i = 1; i <= points * 2; i++) {
+                    const angle = (i * Math.PI) / points;
+                    const radius = i % 2 === 0 ? outerRadius : innerRadius;
+                    const x = Math.sin(angle) * radius;
+                    const y = Math.cos(angle) * radius;
+                    starShape.lineTo(x, y);
+                }
+                
+                geometry = new THREE.ShapeGeometry(starShape);
+                const starMesh = new THREE.Mesh(geometry, material);
+                starMesh.rotation.x = -Math.PI / 2;
+                starMesh.position.y = -0.5;
+                starMesh.receiveShadow = true;
+                this.scene.add(starMesh);
+                this.objects.push(starMesh);
                 break;
                 
             default:
