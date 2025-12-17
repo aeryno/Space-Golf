@@ -1,16 +1,18 @@
 /**
  * Course - Golf course/hole generation
  * Creates the playing surface, obstacles, and hole
+ * Used copilot to help
  */
 
 import * as THREE from 'three';
-
+// Import any additional modules if needed
 export class Course {
+    // Initialize with scene and mode
     constructor(scene, mode = 'prototype') {
         this.scene = scene;
         this.mode = mode;
         this.objects = [];
-        this.walls = []; // Store wall objects for collision detection
+        this.walls = [];
         this.currentHoleNumber = 1;
         
         // Course data
@@ -23,7 +25,7 @@ export class Course {
         this.minBounds = new THREE.Vector3(-30, -10, -30);
         this.maxBounds = new THREE.Vector3(30, 20, 30);
     }
-    
+    // Clear existing course objects
     createHole(holeNumber) {
         this.clearCourse();
         this.currentHoleNumber = holeNumber; // Store current hole number
@@ -43,7 +45,7 @@ export class Course {
         // Create decorative elements
         this.createDecorations(holeConfig);
     }
-    
+    // Get configuration for each hole
     getHoleConfig(holeNumber) {
         // Different configurations for each hole
         const configs = [
@@ -75,21 +77,21 @@ export class Course {
                 groundSize: { outerRadius: 30, innerRadius: 12 },
                 groundShape: 'donut'
             },
-            { // Hole 5 - With drones (harder)
+            { // Hole 5 
                 par: 4,
                 start: new THREE.Vector3(0, 0, 30),
                 hole: new THREE.Vector3(0, 0, -30),
                 groundSize: { width: 25, depth: 70 },
                 groundShape: 'narrow'
             },
-            { // Hole 6 - Donut course (like hole 4)
+            { // Hole 6 - Donut course
                 par: 4,
                 start: new THREE.Vector3(0, 0, 25),
                 hole: new THREE.Vector3(0, 0, -25),
                 groundSize: { outerRadius: 30, innerRadius: 12 },
                 groundShape: 'donut'
             },
-            { // Hole 7 - Wormhole jump
+            { // Hole 7 
                 par: 5,
                 start: new THREE.Vector3(0, 0, 35),
                 hole: new THREE.Vector3(0, 0, -35),
@@ -114,10 +116,10 @@ export class Course {
         
         return configs[Math.min(holeNumber - 1, configs.length - 1)];
     }
-    
+    // Create ground/platform based on configuration
     createGround(config) {
         let geometry, material;
-        
+        // Choose material based on mode
         if (this.mode === 'prototype') {
             material = new THREE.MeshStandardMaterial({
                 color: 0x2a4d2a,
@@ -127,15 +129,16 @@ export class Course {
         } else {
             // Space-themed brighter purple surface
             material = new THREE.MeshStandardMaterial({
-                color: 0x4d1a99, // Brighter purple
+                color: 0x4d1a99, 
                 roughness: 0.4,
                 metalness: 0.3,
-                emissive: 0x330055, // Brighter emissive glow
+                emissive: 0x330055, 
                 emissiveIntensity: 0.3
             });
         }
-        
+        // Create ground shape based on config
         switch (config.groundShape) {
+            // Circular ground
             case 'circular':
                 geometry = new THREE.CircleGeometry(config.groundSize.radius, 32);
                 const circleMesh = new THREE.Mesh(geometry, material);
@@ -175,7 +178,7 @@ export class Course {
                     // Add some variation but keep platforms reachable
                     const offsetX = (Math.random() - 0.5) * 8;
                     const offsetZ = (Math.random() - 0.5) * 8;
-                    const size = 10 + Math.random() * 4; // 10-14 unit platforms
+                    const size = 10 + Math.random() * 4;
                     const finalX = x + offsetX;
                     const finalZ = z + offsetZ;
                     this.createBox(finalX, -0.5, finalZ, size, 1, size, material);
@@ -194,6 +197,7 @@ export class Course {
                     config.groundSize.outerRadius,
                     32
                 );
+                // Create mesh
                 const donutMesh = new THREE.Mesh(geometry, material);
                 donutMesh.rotation.x = -Math.PI / 2;
                 donutMesh.position.y = -0.5;
@@ -219,7 +223,7 @@ export class Course {
                     const y = Math.cos(angle) * radius;
                     starShape.lineTo(x, y);
                 }
-                
+                // Close the shape
                 geometry = new THREE.ShapeGeometry(starShape);
                 const starMesh = new THREE.Mesh(geometry, material);
                 starMesh.rotation.x = -Math.PI / 2;
@@ -236,6 +240,7 @@ export class Course {
                     1,
                     config.groundSize.depth
                 );
+                // Create mesh
                 const mesh = new THREE.Mesh(geometry, material);
                 mesh.position.y = -0.5;
                 mesh.receiveShadow = true;
@@ -247,11 +252,9 @@ export class Course {
         this.createBorders(config);
         
         // Add boundary walls
-        console.log('Creating boundary walls for hole:', this.currentHoleNumber, 'shape:', config.groundShape);
         this.createBoundaryWalls(config);
-        console.log('Total walls created:', this.walls.length);
     }
-    
+    // Create a box and add to scene
     createBox(x, y, z, width, height, depth, material) {
         const geometry = new THREE.BoxGeometry(width, height, depth);
         const mesh = new THREE.Mesh(geometry, material);
@@ -261,7 +264,7 @@ export class Course {
         this.objects.push(mesh);
         return mesh;
     }
-    
+    // Create a wall box and add to scene
     createWallBox(x, y, z, width, height, depth, material) {
         const geometry = new THREE.BoxGeometry(width, height, depth);
         const mesh = new THREE.Mesh(geometry, material);
@@ -273,8 +276,6 @@ export class Course {
         mesh.wallWidth = width;
         mesh.wallHeight = height;
         mesh.wallDepth = depth;
-        
-        console.log('Created wall at:', x, y, z, 'dimensions:', width, height, depth);
         
         this.scene.add(mesh);
         this.objects.push(mesh);
@@ -305,26 +306,26 @@ export class Course {
         // Front wall
         this.createWallBox(0, height/2, d/2 + thickness/2, w + thickness*2, height, thickness, material);
     }
-    
+    // Create circular walls for circular courses
     createCircularWalls(config, material, height, thickness) {
         const radius = config.groundSize.radius;
         const segments = 48; // Increased for smoother curves
-        
+        // Create outer ring of walls
         for (let i = 0; i < segments; i++) {
             const angle1 = (i / segments) * Math.PI * 2;
             const angle2 = ((i + 1) / segments) * Math.PI * 2 + 0.01; // Small overlap to prevent gaps
-            
+            // Calculate wall segment endpoints
             const x1 = Math.cos(angle1) * (radius + thickness/2);
             const z1 = Math.sin(angle1) * (radius + thickness/2);
             const x2 = Math.cos(angle2) * (radius + thickness/2);
             const z2 = Math.sin(angle2) * (radius + thickness/2);
-            
+            // Midpoint for positioning
             const midX = (x1 + x2) / 2;
             const midZ = (z1 + z2) / 2;
-            
+            // Calculate wall length and angle
             const wallLength = Math.sqrt((x2-x1)*(x2-x1) + (z2-z1)*(z2-z1));
             const wallAngle = Math.atan2(z2-z1, x2-x1);
-            
+            // Create wall mesh
             const wallGeometry = new THREE.BoxGeometry(wallLength, height, thickness);
             const wall = new THREE.Mesh(wallGeometry, material);
             wall.position.set(midX, height/2, midZ);
@@ -341,7 +342,7 @@ export class Course {
             this.walls.push(wall); // Add to walls array for collision checking
         }
     }
-    
+    // Create L-shaped walls for L-shaped courses
     createLShapeWalls(config, material, height, thickness) {
         const w = config.groundSize.width;
         const d = config.groundSize.depth;
@@ -357,13 +358,13 @@ export class Course {
         const extD = d * 0.4;
         const extX = w * 0.3;
         const extZ = -d * 0.3;
-        
+        // Extension walls
         this.createWallBox(extX - extW/2 - thickness/2, height/2, extZ, thickness, height, extD + thickness, material);
         this.createWallBox(extX + extW/2 + thickness/2, height/2, extZ, thickness, height, extD + thickness, material);
         this.createWallBox(extX, height/2, extZ - extD/2 - thickness/2, extW + thickness*2, height, thickness, material);
         this.createWallBox(extX, height/2, extZ + extD/2 + thickness/2, extW + thickness*2, height, thickness, material);
     }
-    
+    // Create donut-shaped walls for donut-shaped courses
     createDonutWalls(config, material, height, thickness) {
         const innerRadius = config.groundSize.innerRadius;
         const segments = 48; // Increased for smoother curves
@@ -372,17 +373,17 @@ export class Course {
         for (let i = 0; i < segments; i++) {
             const angle1 = (i / segments) * Math.PI * 2;
             const angle2 = ((i + 1) / segments) * Math.PI * 2 + 0.01; // Small overlap to prevent gaps
-            
+            // Calculate wall segment endpoints
             const x1 = Math.cos(angle1) * (innerRadius - thickness/2);
             const z1 = Math.sin(angle1) * (innerRadius - thickness/2);
             const x2 = Math.cos(angle2) * (innerRadius - thickness/2);
             const z2 = Math.sin(angle2) * (innerRadius - thickness/2);
-            
+            // Midpoint for positioning
             const centerX = (x1 + x2) / 2;
             const centerZ = (z1 + z2) / 2;
             const wallLength = Math.sqrt((x2-x1)**2 + (z2-z1)**2);
             const wallAngle = Math.atan2(z2-z1, x2-x1);
-            
+            // Create wall mesh
             const wall = new THREE.Mesh(
                 new THREE.BoxGeometry(wallLength, height, thickness),
                 material
@@ -390,7 +391,7 @@ export class Course {
             wall.position.set(centerX, height/2, centerZ);
             wall.rotation.y = wallAngle;
             wall.receiveShadow = true;
-            
+            // Store wall properties for collision detection
             wall.isWall = true;
             wall.wallWidth = wallLength;
             wall.wallHeight = height;
@@ -401,7 +402,7 @@ export class Course {
             this.walls.push(wall);
         }
     }
-    
+    // Create walls for scattered platforms
     createScatteredWalls(config, material, height, thickness) {
         // Create walls around all scattered platforms, avoiding overlaps
         if (config.scatteredPlatforms) {
@@ -412,11 +413,11 @@ export class Course {
             this.createPlatformWalls(config.hole.x, config.hole.z, 10, material, height, thickness);
         }
     }
-    
+    // Create walls around multiple platforms without overlapping
     createNonOverlappingPlatformWalls(platforms, material, height, thickness) {
         // Track wall segments to avoid overlaps
         const wallSegments = [];
-        
+        // For each platform, attempt to create walls on all four sides
         for (const platform of platforms) {
             const x = platform.x;
             const z = platform.z;
@@ -463,7 +464,7 @@ export class Course {
             }
         }
     }
-    
+    // Check if a new wall overlaps with existing walls
     wallOverlaps(newWall, existingWalls) {
         for (const existing of existingWalls) {
             // Check for overlap - walls overlap if they intersect in both x and z dimensions
@@ -471,7 +472,7 @@ export class Course {
             const newRight = newWall.x + newWall.width/2;
             const newBack = newWall.z - newWall.depth/2;
             const newFront = newWall.z + newWall.depth/2;
-            
+            // Existing wall boundaries
             const existingLeft = existing.x - existing.width/2;
             const existingRight = existing.x + existing.width/2;
             const existingBack = existing.z - existing.depth/2;
@@ -487,7 +488,7 @@ export class Course {
         }
         return false; // No overlap
     }
-    
+    // Create walls around a single platform
     createPlatformWalls(x, z, size, material, height, thickness) {
         const halfSize = size / 2;
         // Left wall
@@ -499,19 +500,19 @@ export class Course {
         // Front wall
         this.createWallBox(x, height/2, z + halfSize + thickness/2, size + thickness*2, height, thickness, material);
     }
-    
+
     createHoleMesh() {
         // Create the hole (flag and cup)
         const cupGeometry = new THREE.CylinderGeometry(this.holeRadius, this.holeRadius, 0.5, 32);
         const cupMaterial = new THREE.MeshStandardMaterial({
-            color: 0x000000, // Solid black for both modes
+            color: 0x000000,
             roughness: 0.3,
             metalness: 0.7
         });
-        
+        // Cup mesh
         const cup = new THREE.Mesh(cupGeometry, cupMaterial);
         cup.position.copy(this.holePosition);
-        cup.position.y = -0.1; // Raised from -0.25 to -0.1 to prevent green poking through
+        cup.position.y = -0.1; 
         this.scene.add(cup);
         this.objects.push(cup);
         
@@ -522,7 +523,7 @@ export class Course {
             roughness: 0.4,
             metalness: 0.6
         });
-        
+        // Pole mesh
         const pole = new THREE.Mesh(poleGeometry, poleMaterial);
         pole.position.copy(this.holePosition);
         pole.position.y = 2.5;
@@ -538,7 +539,7 @@ export class Course {
             emissive: this.mode === 'full' ? 0x00aaff : 0x000000,
             emissiveIntensity: 0.3
         });
-        
+        // Flag mesh
         const flag = new THREE.Mesh(flagGeometry, flagMaterial);
         flag.position.copy(this.holePosition);
         flag.position.y = 4.5;
@@ -555,7 +556,7 @@ export class Course {
                 opacity: 0.5,
                 side: THREE.DoubleSide
             });
-            
+            // Glow mesh
             const glow = new THREE.Mesh(glowGeometry, glowMaterial);
             glow.position.copy(this.holePosition);
             glow.position.y = 0.01;
@@ -564,17 +565,17 @@ export class Course {
             this.objects.push(glow);
         }
     }
-    
+    // Create decorative elements based on mode
     createDecorations(config) {
         if (this.mode === 'full') {
             // Add planets in the background
             this.createBackgroundPlanets();
         }
     }
-    
+    // Create decorative planets in the background
     createBackgroundPlanets() {
         const planetColors = [0xff6b6b, 0x4ecdc4, 0x45b7d1, 0x96ceb4, 0xfeca57];
-        
+        // Create several planets at random positions
         for (let i = 0; i < 5; i++) {
             const radius = 5 + Math.random() * 15;
             const geometry = new THREE.SphereGeometry(radius, 32, 32);
@@ -606,10 +607,9 @@ export class Course {
     }
     
     getWalls() {
-        console.log('Getting walls, count:', this.walls.length);
         return this.walls;
     }
-    
+
     checkHoleCollision(ballPosition) {
         const dx = ballPosition.x - this.holePosition.x;
         const dz = ballPosition.z - this.holePosition.z;
@@ -623,7 +623,7 @@ export class Course {
         
         // Check bounds based on course shape and wall positions
         const holeConfig = this.getHoleConfig(this.getCurrentHole());
-        
+        // Use specific bounds checking per shape
         switch (holeConfig.groundShape) {
             case 'rectangle':
             case 'narrow':
@@ -651,7 +651,7 @@ export class Course {
         const d = config.groundSize.depth;
         const wallThickness = 0.3;
         const wallHeight = 0.8;
-        const safetyMargin = 2.0; // Only restart if ball goes well beyond walls
+        const safetyMargin = 2.0; 
         
         // Check if ball is significantly beyond walls (not just touching)
         const wayBeyondWalls = (pos.x < -w/2 - wallThickness - safetyMargin ||
@@ -670,7 +670,7 @@ export class Course {
         const radius = config.groundSize.radius;
         const wallThickness = 0.3;
         const wallHeight = 0.8;
-        const safetyMargin = 2.0; // Only restart if ball goes well beyond wall
+        const safetyMargin = 2.0; 
         
         // Calculate distance from center
         const distance = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
@@ -690,7 +690,7 @@ export class Course {
         const d = config.groundSize.depth;
         const wallThickness = 0.3;
         const wallHeight = 0.8;
-        const safetyMargin = 8.0; // Only restart if ball goes well beyond walls
+        const safetyMargin = 8.0;
         
         // Check if in main section (with safety margin)
         const inMainSection = (pos.x >= -w/4 - wallThickness - safetyMargin && pos.x <= w/4 + wallThickness + safetyMargin &&
@@ -718,7 +718,7 @@ export class Course {
         const wallThickness = 0.3;
         const platformSize = 10;
         const wallHeight = 0.8;
-        const safetyMargin = 3.0; // Larger safety margin for scattered platforms
+        const safetyMargin = 3.0; 
         
         // Check if near start platform (with safety margin)
         const nearStart = (Math.abs(pos.x - config.start.x) <= platformSize/2 + wallThickness + safetyMargin &&
@@ -743,7 +743,7 @@ export class Course {
         const innerRadius = config.groundSize.innerRadius;
         const wallThickness = 0.3;
         const wallHeight = 0.8;
-        const safetyMargin = 8.0; // Large safety margin to prevent premature restarts
+        const safetyMargin = 8.0;
         
         // Calculate distance from center
         const distanceFromCenter = Math.sqrt(pos.x * pos.x + pos.z * pos.z);

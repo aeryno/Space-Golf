@@ -1,10 +1,12 @@
 /**
  * Ball - Golf ball physics and rendering
  * Handles ball movement, physics simulation, and collisions
+ * Used copilot to help
  */
 
 import * as THREE from 'three';
 
+// Ball class
 export class Ball {
     constructor(scene, mode = 'prototype') {
         this.scene = scene;
@@ -15,7 +17,7 @@ export class Ball {
         this.friction = 0.98;
         this.gravity = -9.8;
         this.bounciness = 0.6;
-        this.minSpeed = 0.5; // Increased from 0.01 to allow shooting much sooner
+        this.minSpeed = 0.5; 
         this.isMoving = false;
         
         // Ball properties
@@ -25,6 +27,7 @@ export class Ball {
         this.createMesh();
     }
     
+    // Create ball mesh with different materials based on mode
     createMesh() {
         const geometry = new THREE.SphereGeometry(this.radius, 32, 32);
         let material;
@@ -46,7 +49,7 @@ export class Ball {
                 metalness: 0.8
             });
         }
-        
+        // Create mesh and add to scene
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.castShadow = true;
         this.mesh.receiveShadow = true;
@@ -58,7 +61,9 @@ export class Ball {
         }
     }
     
+    // Add glow effect around the ball
     addGlow() {
+        // Create glow mesh
         const glowGeometry = new THREE.SphereGeometry(this.radius * 1.5, 32, 32);
         const glowMaterial = new THREE.MeshBasicMaterial({
             color: 0x00ffff,
@@ -70,25 +75,29 @@ export class Ball {
         this.mesh.add(this.glowMesh);
     }
     
+    // Set ball position directly
     setPosition(position) {
         this.mesh.position.copy(position);
-        this.mesh.position.y = this.radius; // Ensure ball is on ground
+        this.mesh.position.y = this.radius;
         this.velocity.set(0, 0, 0);
         this.isMoving = false;
     }
     
+    // Get current ball position
     getPosition() {
         return this.mesh.position.clone();
     }
     
+    // Apply a shooting force to the ball
     shoot(direction, power) {
-        const force = power * 50; // Max speed
+        const force = power * 50; 
         this.velocity.x = direction.x * force;
         this.velocity.z = direction.z * force;
-        this.velocity.y = power * 5; // Slight upward arc
+        this.velocity.y = power * 5;
         this.isMoving = true;
     }
     
+    // Update ball physics
     update(delta) {
         if (!this.isMoving && this.velocity.length() < this.minSpeed) {
             return;
@@ -128,11 +137,11 @@ export class Ball {
         this.mesh.rotation.z -= this.velocity.x * delta * rotationSpeed;
     }
     
+    // Check collision with an object
     checkCollision(object) {
         // Handle wall collisions (box-shaped objects)
         if (object.isWall) {
             const collision = this.checkBoxCollision(object);
-            if (collision) console.log('Box collision detected with wall:', object);
             return collision;
         }
         
@@ -147,14 +156,10 @@ export class Ball {
         const distance = ballPos.distanceTo(objPos);
         const collision = distance < (this.radius + objRadius);
         
-        // Debug output for close approaches
-        if (distance < (this.radius + objRadius) * 1.5) {
-            console.log('Obstacle proximity - Distance:', distance.toFixed(2), 'Required:', (this.radius + objRadius).toFixed(2), 'Collision:', collision);
-        }
-        
         return collision;
     }
     
+    // Detailed box collision detection
     checkBoxCollision(wall) {
         const ballPos = this.mesh.position;
         const wallPos = wall.position;
@@ -184,24 +189,15 @@ export class Ball {
         const halfWidth = wallWidth / 2 + this.radius;
         const halfHeight = wallHeight / 2 + this.radius;
         const halfDepth = wallDepth / 2 + this.radius;
-        
+        // Check for collision
         const collision = Math.abs(relativePos.x) < halfWidth &&
                          Math.abs(relativePos.y) < halfHeight &&
                          Math.abs(relativePos.z) < halfDepth;
         
-        if (collision) {
-            console.log('Box collision details:', {
-                ballPos: ballPos.clone(),
-                wallPos: wallPos.clone(),
-                relativePos: relativePos.clone(),
-                wallDimensions: { wallWidth, wallHeight, wallDepth },
-                ballRadius: this.radius
-            });
-        }
-        
         return collision;
     }
     
+    // Handle collision response with an object
     handleCollision(obstacle) {
         // Calculate bounce direction
         const normal = new THREE.Vector3()
@@ -226,8 +222,9 @@ export class Ball {
         }
     }
     
+    // Handle collision response with a wall
     handleWallCollision(wall) {
-        // Handle collision with course walls (guard rails)
+        // Handle collision with course walls 
         const ballPos = this.mesh.position.clone();
         const wallPos = wall.position.clone();
         
@@ -302,6 +299,7 @@ export class Ball {
         return !this.isMoving;
     }
     
+    // Clean up resources
     dispose() {
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();

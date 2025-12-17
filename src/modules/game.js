@@ -1,6 +1,7 @@
 /**
  * Game - Main game controller
  * Handles scene setup, game loop, and overall game state
+ * Used copilot to help
  */
 
 import * as THREE from 'three';
@@ -10,10 +11,11 @@ import { Course } from './course.js';
 import { InputHandler } from './input.js';
 import { ObstacleManager } from './obstacles.js';
 
+// Main Game Class
 export class Game {
     constructor(canvas) {
         this.canvas = canvas;
-        this.mode = 'full'; // 'prototype' or 'full' - default to full mode
+        this.mode = 'full'; 
         this.isRunning = false;
         this.clock = new THREE.Clock();
         
@@ -38,6 +40,7 @@ export class Game {
         this.aimArrowStem = null;
     }
     
+    // Initialize the game
     init() {
         this.setupRenderer();
         this.setupScene();
@@ -47,50 +50,52 @@ export class Game {
         this.setupEventListeners();
     }
     
+    // Setup Three.js renderer
     setupRenderer() {
+        // Create the WebGL renderer
         this.renderer = new THREE.WebGLRenderer({
             canvas: this.canvas,
             antialias: true
         });
+        // Set the size and pixel ratio
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         this.renderer.setClearColor(0x000000); // Ensure black background
-        console.log('Renderer setup complete');
-        console.log('Canvas dimensions:', this.canvas.width, this.canvas.height);
-        console.log('Window dimensions:', window.innerWidth, window.innerHeight);
     }
     
+    // Setup Three.js scene
     setupScene() {
         this.scene = new THREE.Scene();
         this.createSkybox();
     }
     
+    // Create starfield skybox
     createSkybox() {
         // Create a simple starfield for both modes
         const geometry = new THREE.BufferGeometry();
         const starCount = 2000;
         const positions = new Float32Array(starCount * 3);
-        
+        // Randomly distribute stars in a cube around the origin
         for (let i = 0; i < starCount * 3; i += 3) {
             positions[i] = (Math.random() - 0.5) * 2000;
             positions[i + 1] = (Math.random() - 0.5) * 2000;
             positions[i + 2] = (Math.random() - 0.5) * 2000;
         }
-        
+        // Set positions attribute
         geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-        
+        // Create points material for stars
         const material = new THREE.PointsMaterial({
             color: 0xffffff,
             size: 2,
             sizeAttenuation: true
         });
-        
+        // Create the points and add to scene
         this.stars = new THREE.Points(geometry, material);
         this.scene.add(this.stars);
     }
-    
+    // Setup scene lighting
     setupLighting() {
         // Ambient light
         const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
@@ -115,16 +120,14 @@ export class Game {
         pointLight.position.set(-30, 20, -30);
         this.scene.add(pointLight);
     }
-    
+    // Setup camera controller
     setupCamera() {
         this.cameraController = new CameraController(this.canvas);
         // Force camera to look at the start position for debugging
         this.cameraController.camera.position.set(0, 50, 60);
         this.cameraController.camera.lookAt(0, 0, 20); // Look at start position
-        console.log('Camera created at position:', this.cameraController.camera.position);
-        console.log('Camera looking at start position');
     }
-    
+    // Setup game components
     setupComponents() {
         // Create course first
         this.course = new Course(this.scene, this.mode);
@@ -147,28 +150,24 @@ export class Game {
         
         // Create aim arrow
         this.createAimArrow();
-        
-        // Debug: log scene children
-        console.log('Scene children:', this.scene.children.length);
-        console.log('Scene children:', this.scene.children);
     }
-    
+    // Setup event listeners
     setupEventListeners() {
         window.addEventListener('resize', () => this.onWindowResize());
     }
-    
+    // Handle window resize
     onWindowResize() {
         this.cameraController.updateAspect(window.innerWidth / window.innerHeight);
         this.renderer.setSize(window.innerWidth, window.innerHeight);
     }
-    
+    // Change game mode and rebuild scene
     setMode(mode) {
         if (this.mode === mode) return;
         
         this.mode = mode;
         this.rebuildScene();
     }
-    
+    // Rebuild the scene when mode changes
     rebuildScene() {
         // Clear existing game objects
         this.course.dispose();
@@ -200,7 +199,7 @@ export class Game {
         }
         this.createAimArrow();
     }
-    
+    // Handle donut center collision on hole 6
     handleDonutCenterCollision() {
         // Reset ball to start position
         this.ball.setPosition(this.course.getStartPosition());
@@ -218,12 +217,10 @@ export class Game {
             this.aimArrowStem.visible = false;
         }
         
-        console.log('Level restarted - ball fell through donut center');
-        
         // Show custom donut center message
         this.showDonutCenterMessage();
     }
-    
+    // Show donut center collision message
     showDonutCenterMessage() {
         const messageEl = document.getElementById('restart-message');
         if (messageEl) {
@@ -249,16 +246,16 @@ export class Game {
             }, 3000);
         }
     }
-    
+    // Start the game loop
     start() {
         this.isRunning = true;
         this.gameLoop();
     }
-    
+    // Stop the game loop
     stop() {
         this.isRunning = false;
     }
-    
+    // Main game loop
     gameLoop() {
         if (!this.isRunning) return;
         
@@ -268,7 +265,7 @@ export class Game {
         this.update(delta);
         this.render();
     }
-    
+    // Render the scene
     update(delta) {
         // Update stars rotation for atmosphere
         if (this.stars) {
@@ -297,7 +294,7 @@ export class Game {
         // Update UI
         this.updateUI();
     }
-    
+    // Check for various collisions
     checkCollisions() {
         // Check if ball enters the center hole on hole 6 (donut course)
         if (this.currentHole === 6) {
@@ -306,9 +303,8 @@ export class Game {
             
             // If ball enters the center hole (inner radius is 12), treat as out of bounds
             if (distanceFromCenter < 12) {
-                console.log('DONUT CENTER COLLISION! Ball fell through center hole at distance:', distanceFromCenter.toFixed(2));
                 this.handleDonutCenterCollision();
-                return; // Exit early to prevent other collisions
+                return; 
             }
         }
         
@@ -318,14 +314,12 @@ export class Game {
             if (obstacle.isBlackHole) {
                 // Check black hole collision - if touched, return to start
                 if (this.ball.checkCollision(obstacle)) {
-                    console.log('BLACK HOLE COLLISION! Ball absorbed at:', obstacle.mesh.position.x.toFixed(2), obstacle.mesh.position.z.toFixed(2));
                     this.handleBlackHoleCollision();
                     return; // Exit early to prevent other collisions
                 }
             } else {
                 // Normal obstacle collision
                 if (this.ball.checkCollision(obstacle)) {
-                    console.log('OBSTACLE COLLISION! Ball bouncing off obstacle at:', obstacle.mesh.position.x.toFixed(2), obstacle.mesh.position.z.toFixed(2));
                     this.ball.handleCollision(obstacle);
                 }
             }
@@ -342,7 +336,6 @@ export class Game {
             const wallRadius = 3; // Large fixed radius for walls
             
             if (distance < this.ball.radius + wallRadius) {
-                console.log('WALL COLLISION! Ball at:', ballPos.x.toFixed(2), ballPos.z.toFixed(2), 'Wall at:', wallPos.x.toFixed(2), wallPos.z.toFixed(2), 'Distance:', distance.toFixed(2));
                 
                 // Calculate bounce direction
                 const normal = new THREE.Vector3()
@@ -365,15 +358,11 @@ export class Game {
         
         // Check course bounds
         if (this.course.checkBounds(this.ball)) {
-            console.log('LEVEL RESTART TRIGGERED! Ball position:', this.ball.getPosition());
             this.restartLevel();
         }
     }
-    
+    // Handle hole completion
     onHoleComplete() {
-        console.log('=== HOLE COMPLETION STARTED ===', Date.now());
-        console.log('Current hole:', this.currentHole);
-        
         // Calculate and display golf scoring terminology before resetting stroke count
         const completedHole = this.currentHole;
         const strokesUsed = this.strokeCount;
@@ -398,7 +387,6 @@ export class Game {
         
         if (this.currentHole > 9) {
             // Game complete
-            alert(`Congratulations! You completed the course in ${strokesUsed} total strokes!`);
             this.currentHole = 1;
             this.strokeCount = 0;
             this.completedHoles.clear(); // Reset completed holes for new game
@@ -415,13 +403,12 @@ export class Game {
         if (typeof window.updateLevelsUI === 'function') {
             window.updateLevelsUI(this.currentHole);
         }
-        
-        console.log('=== HOLE COMPLETION FINISHED ===', Date.now());
     }
     
+    // Get golf scoring terminology
     getGolfScoreTerminology(strokes, par) {
         const difference = strokes - par;
-        
+        // Determine terminology based on strokes vs par
         if (strokes === 1) {
             return "🏆 HOLE-IN-ONE! (Ace) 🏆";
         } else if (difference <= -3) {
@@ -448,7 +435,7 @@ export class Game {
     onStroke() {
         this.strokeCount++;
     }
-    
+    // Restart the current level
     restartLevel() {
         // Reset ball to start position
         this.ball.setPosition(this.course.getStartPosition());
@@ -473,13 +460,10 @@ export class Game {
             this.aimArrowStem.visible = false;
         }
         
-        // Note: We intentionally don't reset strokeCount to preserve it across restarts
-        console.log('Level restarted - ball went out of bounds');
-        
         // Show restart message briefly
         this.showRestartMessage();
     }
-    
+    // Make message element clickable to dismiss
     makeMessageClickable(messageEl) {
         // Make message clickable to dismiss instantly
         if (messageEl) {
@@ -498,7 +482,7 @@ export class Game {
             messageEl.style.userSelect = 'none'; // Prevent text selection
         }
     }
-    
+    // Show restart message
     showRestartMessage() {
         const messageEl = document.getElementById('restart-message');
         if (messageEl) {
@@ -515,7 +499,7 @@ export class Game {
             }, 2000);
         }
     }
-    
+    // Handle black hole collision
     handleBlackHoleCollision() {
         // Stop the ball immediately
         this.ball.velocity.set(0, 0, 0);
@@ -537,10 +521,9 @@ export class Game {
                 this.aimArrowStem.visible = false;
             }
             
-            console.log('Ball returned to start position after black hole collision');
         }, 500);
     }
-    
+    // Show black hole collision message
     showBlackHoleMessage() {
         const messageEl = document.getElementById('restart-message');
         if (messageEl) {
@@ -566,7 +549,7 @@ export class Game {
             }, 3000);
         }
     }
-    
+    // Show score message upon hole completion
     showScoreMessage(holeNumber, scoreResult, strokes, par) {
         const messageEl = document.getElementById('score-message');
         const termEl = document.getElementById('score-term');
@@ -610,7 +593,7 @@ export class Game {
             }, 3500);
         }
     }
-    
+    // Update the completed holes display in the UI
     updateCompletedHolesDisplay() {
         // Update the holes dropdown to show completed holes
         for (let hole = 1; hole <= 9; hole++) {
@@ -624,33 +607,11 @@ export class Game {
             }
         }
     }
-    
-    ensureScorecardListeners() {
-        // No longer needed - using direct onclick handlers in HTML
-        console.log('Scorecard using direct onclick handlers - no setup needed');
-    }
-    
+    // Show the scorecard modal
     showScorecard() {
-        console.log('showScorecard() called - current hole:', this.currentHole);
-        console.log('window.gameInstance exists:', !!window.gameInstance);
-        console.log('this === window.gameInstance:', this === window.gameInstance);
-        console.log('this object type:', typeof this);
-        console.log('this constructor name:', this.constructor.name);
-        
         const modal = document.getElementById('scorecard-modal');
         const content = document.getElementById('scorecard-content');
         const totals = document.getElementById('scorecard-totals');
-        
-        console.log('Modal elements found:', { modal: !!modal, content: !!content, totals: !!totals });
-        
-        if (!modal || !content || !totals) {
-            console.error('Missing scorecard modal elements');
-            return;
-        }
-        
-        console.log('Current scorecard data:', this.scorecard);
-        console.log('Completed holes:', Array.from(this.completedHoles));
-        console.log('Current hole:', this.currentHole);
         
         // Build scorecard content
         let scorecardHTML = '<table style="width: 100%; border-collapse: collapse;">';
@@ -661,10 +622,12 @@ export class Game {
         scorecardHTML += '<th style="padding: 10px; text-align: left;">Result</th>';
         scorecardHTML += '</tr>';
         
+        // Totals
         let totalStrokes = 0;
         let totalPar = 0;
         let completedCount = 0;
         
+        // Loop through holes 1 to 9
         for (let hole = 1; hole <= 9; hole++) {
             const holeConfig = this.getHoleConfigForScorecard(hole);
             const holePar = holeConfig ? holeConfig.par : 3;
@@ -672,16 +635,16 @@ export class Game {
             const isCurrent = hole === this.currentHole;
             
             totalPar += holePar;
-            
+            // Style for current hole
             let rowStyle = 'padding: 8px; border-bottom: 1px solid rgba(255, 107, 53, 0.3);';
             if (isCurrent) {
                 rowStyle += 'background: rgba(255, 107, 53, 0.1);';
             }
-            
+            // Build row
             scorecardHTML += `<tr>`;
             scorecardHTML += `<td style="${rowStyle}">${hole}${isCurrent ? ' (current)' : ''}</td>`;
             scorecardHTML += `<td style="${rowStyle} text-align: center;">${holePar}</td>`;
-            
+            // Score and result
             if (isCompleted && this.scorecard[hole]) {
                 const score = this.scorecard[hole];
                 totalStrokes += score.strokes;
@@ -702,14 +665,14 @@ export class Game {
             }
             scorecardHTML += `</tr>`;
         }
-        
+        // Close table
         scorecardHTML += '</table>';
         content.innerHTML = scorecardHTML;
         
         // Update totals
         let totalsHTML = `<div>Course Par: ${totalPar}</div>`;
         totalsHTML += `<div>Holes Completed: ${completedCount} / 9</div>`;
-        
+        // Only show current score if at least one hole completed
         if (completedCount > 0) {
             const totalDiff = totalStrokes - (completedCount > 0 ? totalStrokes - totalDiff : 0);
             const actualParForCompleted = Object.values(this.scorecard).reduce((sum, score) => sum + score.par, 0);
@@ -720,28 +683,20 @@ export class Game {
         } else {
             totalsHTML += `<div style="font-style: italic; opacity: 0.7;">Start playing to see your scores!</div>`;
         }
-        
+        // Show the modal
         totals.innerHTML = totalsHTML;
-        
-        console.log('About to show modal. Current display:', modal.style.display);
         modal.style.display = 'block';
-        console.log('Modal display set to:', modal.style.display);
-        console.log('Modal computed style display:', window.getComputedStyle(modal).display);
-        console.log('Modal offsetParent:', modal.offsetParent);
     }
     
-    hideScorecard() {
-        console.log('hideScorecard() called');
-        console.log('window.gameInstance exists:', !!window.gameInstance);
-        
+    // Hide the scorecard modal
+    hideScorecard() {        
         const modal = document.getElementById('scorecard-modal');
-        console.log('Modal found:', !!modal);
-        
         if (modal) {
             modal.style.display = 'none';
         }
     }
     
+    // Get hole configuration for scorecard display
     getHoleConfigForScorecard(holeNumber) {
         // This should match the hole configurations in course.js
         const configs = [
@@ -751,6 +706,7 @@ export class Game {
         return configs[holeNumber - 1];
     }
     
+    // Create the aim arrow components
     createAimArrow() {
         const arrowMaterial = new THREE.MeshBasicMaterial({ 
             color: 0xffffff, // White color
@@ -775,6 +731,7 @@ export class Game {
             3, 4, 5   // Bottom face (reversed winding)
         ];
         
+        // Set attributes and indices
         triangleGeometry.setAttribute('position', new THREE.BufferAttribute(vertices, 3));
         triangleGeometry.setIndex(indices);
         triangleGeometry.computeVertexNormals();
@@ -800,6 +757,7 @@ export class Game {
         this.aimArrowStem.visible = false;
     }
     
+    // Update the aim arrow position, rotation, and scale
     updateAimArrow() {
         if (!this.aimArrow || !this.aimArrowStem || !this.ball || !this.inputHandler) return;
         
@@ -808,7 +766,7 @@ export class Game {
         
         this.aimArrow.visible = canShoot;
         this.aimArrowStem.visible = canShoot;
-        
+        // Update positions and scales if visible
         if (this.aimArrow.visible) {
             const ballPos = this.ball.getPosition();
             const aimDirection = this.cameraController.getAimDirection();
@@ -840,6 +798,7 @@ export class Game {
         }
     }
     
+    // Update UI elements
     updateUI() {
         document.getElementById('hole-number').textContent = this.currentHole;
         document.getElementById('stroke-count').textContent = this.strokeCount;
@@ -850,6 +809,7 @@ export class Game {
         powerFill.style.width = `${this.inputHandler.getPower() * 100}%`;
     }
 
+    // Switch to a different hole
     switchToHole(holeNumber) {
         if (holeNumber >= 1 && holeNumber <= 9) {
             this.currentHole = holeNumber;
@@ -859,13 +819,8 @@ export class Game {
         }
     }
     
+    // Render the scene
     render() {
         this.renderer.render(this.scene, this.cameraController.camera);
-        // Debug: log render call (only log every 60 frames to avoid spam)
-        if (this.renderCount === undefined) this.renderCount = 0;
-        this.renderCount++;
-        if (this.renderCount % 60 === 0) {
-            console.log('Render called, frame:', this.renderCount);
-        }
     }
 }

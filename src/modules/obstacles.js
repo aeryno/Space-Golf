@@ -1,10 +1,12 @@
 /**
  * Obstacle Manager
  * Handles creation and animation of moving obstacles
+ * Used copilot to help
  */
 
 import * as THREE from 'three';
 
+// Obstacle Manager Class
 export class ObstacleManager {
     constructor(scene, mode = 'prototype') {
         this.scene = scene;
@@ -12,13 +14,13 @@ export class ObstacleManager {
         this.obstacles = [];
         this.time = 0;
     }
-    
+    // Create obstacles for a given hole number
     createObstacles(holeNumber) {
         this.clearObstacles();
         
         // Special case for hole 9: create 5 mixed obstacles (UFOs, stars, planets) + 2 extra UFOs
         const obstacleCount = holeNumber === 9 ? 5 : Math.min(holeNumber, 5);
-        
+        // Create the base obstacles
         for (let i = 0; i < obstacleCount; i++) {
             this.createObstacle(holeNumber, i);
         }
@@ -36,15 +38,16 @@ export class ObstacleManager {
             this.createExtraUFOs();
         }
     }
-    
+
     createObstacle(holeNumber, index) {
+        // Create a space-themed obstacle based on hole number and index
         const obstacle = {
             mesh: null,
             radius: 1.5 + Math.random(),
             initialPosition: new THREE.Vector3(),
             movementType: 'oscillate', // oscillate, circular, static
             movementSpeed: 1 + Math.random() * 2,
-            movementRange: holeNumber === 9 ? 3 : 5 + Math.random() * 10, // Limit movement on hole 9 to stay within bounds
+            movementRange: holeNumber === 9 ? 3 : 5 + Math.random() * 10,
             phase: Math.random() * Math.PI * 2,
             velocity: new THREE.Vector3()
         };
@@ -59,7 +62,7 @@ export class ObstacleManager {
         
         // For hole 9, create specific mix of obstacles for varied challenge
         if (holeNumber === 9) {
-            const hole9Objects = ['ufo', 'planet', 'star', 'planet', 'star']; // 1 UFO, 2 planets, 2 stars
+            const hole9Objects = ['ufo', 'planet', 'star', 'planet', 'star'];
             objectType = hole9Objects[index];
         } else {
             objectType = spaceObjects[index % spaceObjects.length];
@@ -72,9 +75,9 @@ export class ObstacleManager {
             obstacle.movementRange = 0;
         }
         
-        // Make UFOs larger than other obstacles - all UFOs same size as Hole 3
+        // Make UFOs larger than other obstacles
         if (objectType === 'ufo') {
-            obstacle.radius = 8; // All UFOs are now the large size
+            obstacle.radius = 8; 
         }
         
         let geometry, material;
@@ -126,7 +129,7 @@ export class ObstacleManager {
                 const outerRadius = obstacle.radius;
                 const innerRadius = obstacle.radius * 0.4;
                 const points = 5;
-                
+                // Create star shape
                 for (let i = 0; i < points * 2; i++) {
                     const angle = (i / (points * 2)) * Math.PI * 2;
                     const radius = i % 2 === 0 ? outerRadius : innerRadius;
@@ -140,12 +143,12 @@ export class ObstacleManager {
                     }
                 }
                 starShape.closePath();
-                
+                // Extrude to give some depth
                 geometry = new THREE.ExtrudeGeometry(starShape, {
                     depth: obstacle.radius * 0.2,
                     bevelEnabled: false
                 });
-                
+                // Bright yellow material
                 material = new THREE.MeshStandardMaterial({
                     color: 0xffff00,
                     roughness: 0.3,
@@ -158,21 +161,21 @@ export class ObstacleManager {
                 // Create UFO group for flying saucer
                 const ufoGroup = new THREE.Group();
                 
-                // Main saucer body (flattened sphere)
+                // Main saucer body
                 const saucerGeometry = new THREE.SphereGeometry(obstacle.radius, 32, 16);
                 const saucerMaterial = new THREE.MeshStandardMaterial({
-                    color: 0xc0c0c0, // Metallic silver
+                    color: 0xc0c0c0, 
                     roughness: 0.2,
                     metalness: 0.9
                 });
                 const saucer = new THREE.Mesh(saucerGeometry, saucerMaterial);
-                saucer.scale.y = 0.3; // Flatten to create classic saucer shape
+                saucer.scale.y = 0.3; 
                 ufoGroup.add(saucer);
                 
                 // Top dome
                 const domeGeometry = new THREE.SphereGeometry(obstacle.radius * 0.4, 16, 16);
                 const domeMaterial = new THREE.MeshStandardMaterial({
-                    color: 0x4169e1, // Blue tinted dome
+                    color: 0x4169e1, 
                     roughness: 0.1,
                     metalness: 0.8,
                     transparent: true,
@@ -180,29 +183,29 @@ export class ObstacleManager {
                 });
                 const dome = new THREE.Mesh(domeGeometry, domeMaterial);
                 dome.position.y = obstacle.radius * 0.2;
-                dome.scale.y = 0.8; // Slightly flatten dome
+                dome.scale.y = 0.8;
                 ufoGroup.add(dome);
                 
                 // Green tractor beam pointing downward from UFO base
                 const beamGeometry = new THREE.ConeGeometry(
-                    obstacle.radius * 0.5, // Bottom radius (wide end at bottom)
-                    obstacle.radius * 0.8, // Height (beam length - shorter)
+                    obstacle.radius * 0.5, // Bottom radius
+                    obstacle.radius * 0.8, // Height
                     16, // Radial segments
                     1,  // Height segments
                     true // Open ended (hollow cone)
                 );
                 const beamMaterial = new THREE.MeshStandardMaterial({
-                    color: 0x00ff00, // Bright green
+                    color: 0x00ff00,
                     roughness: 0.1,
                     metalness: 0.1,
                     transparent: true,
                     opacity: 0.3,
-                    emissive: 0x002200, // Glowing green
+                    emissive: 0x002200,
                     side: THREE.DoubleSide
                 });
                 const beam = new THREE.Mesh(beamGeometry, beamMaterial);
-                beam.position.y = -obstacle.radius * 0.5; // Position at UFO base
-                beam.rotation.x = 0; // Natural downward orientation (point at top)
+                beam.position.y = -obstacle.radius * 0.5;
+                beam.rotation.x = 0;
                 ufoGroup.add(beam);
                 
                 // Add glowing lights around the edge
@@ -210,13 +213,13 @@ export class ObstacleManager {
                 for (let i = 0; i < lightCount; i++) {
                     const lightGeometry = new THREE.SphereGeometry(obstacle.radius * 0.05, 8, 8);
                     const lightMaterial = new THREE.MeshStandardMaterial({
-                        color: 0x00ff00, // Green alien lights
+                        color: 0x00ff00, 
                         roughness: 0.1,
                         metalness: 0.2,
-                        emissive: 0x004400 // Glowing effect
+                        emissive: 0x004400 
                     });
                     const light = new THREE.Mesh(lightGeometry, lightMaterial);
-                    
+                    // Position lights evenly around saucer edge
                     const angle = (i / lightCount) * Math.PI * 2;
                     light.position.x = Math.cos(angle) * obstacle.radius * 0.85;
                     light.position.z = Math.sin(angle) * obstacle.radius * 0.85;
@@ -225,13 +228,14 @@ export class ObstacleManager {
                     ufoGroup.add(light);
                 }
                 
+                // Assign the group as the obstacle mesh
                 obstacle.mesh = ufoGroup;
-                geometry = null; // Not used for custom shape
-                material = null; // Not used for custom shape
+                geometry = null; 
+                material = null; 
                 break;
         }
         
-        // Create mesh if not already created (for non-group objects)
+        // Create mesh if not already created
         if (!obstacle.mesh) {
             obstacle.mesh = new THREE.Mesh(geometry, material);
         }
@@ -242,15 +246,15 @@ export class ObstacleManager {
         // Store object type for animation
         obstacle.objectType = objectType;
         
-        // Position obstacle - spread out based on course shape and hole number
+        // Position obstacle
         if (holeNumber === 3 && index === 2 && objectType === 'ufo') {
-            // Special positioning for the central UFO on hole 3 - place it closer to start
+            // Special positioning for the central UFO on hole 3
             obstacle.initialPosition.set(
-                0, // Center X
-                obstacle.radius + 1, // Higher up due to large size
-                5 // Closer to the starting point
+                0,
+                obstacle.radius + 1,
+                5 
             );
-            obstacle.movementType = 'static'; // Keep it stationary as a central obstacle
+            obstacle.movementType = 'static'; 
         } else {
             // Improved positioning system based on hole configuration
             this.positionObstacleForHole(obstacle, holeNumber, index);
@@ -270,8 +274,7 @@ export class ObstacleManager {
         let x, z;
         
         switch (holeNumber) {
-            case 1: // Straight rectangular course (15x50)
-                // Spread obstacles along the path with some variation
+            case 1: // Straight rectangular course
                 const positions1 = [
                     { x: -4, z: 10 },   // Left side, forward
                     { x: 3, z: 0 },     // Right side, center
@@ -284,8 +287,7 @@ export class ObstacleManager {
                 z = pos1.z;
                 break;
                 
-            case 2: // L-shaped course (40x40)
-                // Position obstacles in both arms of the L
+            case 2: // L-shaped course 
                 const positions2 = [
                     { x: -10, z: 5 },   // Left arm
                     { x: 8, z: -8 },    // Right arm
@@ -298,8 +300,7 @@ export class ObstacleManager {
                 z = pos2.z;
                 break;
                 
-            case 3: // Rectangle course (20x60)
-                // Spread along the longer axis with side variations
+            case 3: // Rectangle course
                 const positions3 = [
                     { x: -6, z: 15 },   // Left, forward
                     { x: 6, z: 8 },     // Right, mid-forward
@@ -312,16 +313,14 @@ export class ObstacleManager {
                 z = pos3.z;
                 break;
                 
-            case 4: // Donut course (outer radius 30, inner radius 12)
-                // Position in the playable ring area
-                const ringRadius = 21; // Middle of the ring (12 + 30) / 2
-                const angle4 = (index * 2.4) + (holeNumber * 0.5); // Better spacing
+            case 4: // Donut course
+                const ringRadius = 21;
+                const angle4 = (index * 2.4) + (holeNumber * 0.5); 
                 x = Math.cos(angle4) * ringRadius;
                 z = Math.sin(angle4) * ringRadius;
                 break;
                 
-            case 5: // Narrow course (25x70)
-                // Spread along the length with alternating sides
+            case 5: // Narrow course 
                 const positions5 = [
                     { x: -8, z: 20 },   // Left, forward
                     { x: 7, z: 10 },    // Right, mid-forward
@@ -334,8 +333,7 @@ export class ObstacleManager {
                 z = pos5.z;
                 break;
                 
-            case 6: // Donut course (outer radius 30, inner radius 12)
-                // Position obstacles in the ring area, avoiding the center hole
+            case 6: // Donut course 2
                 const positions6 = [
                     { x: -18, z: 8 },   // Left side of ring
                     { x: 15, z: 12 },   // Right side of ring
@@ -347,9 +345,8 @@ export class ObstacleManager {
                 x = pos6.x;
                 z = pos6.z;
                 break;
-                
-            case 7: // Split course (30x80)
-                // Position obstacles to work with split design
+
+            case 7: // Split course
                 const positions7 = [
                     { x: -8, z: 25 },   // Left side, forward
                     { x: 10, z: 15 },   // Right side, forward
@@ -362,20 +359,18 @@ export class ObstacleManager {
                 z = pos7.z;
                 break;
                 
-            case 8: // Circular course (radius 35)
-                // Spread around the circle at different radii
-                const angle8 = (index * 1.4) + (holeNumber * 0.3); // Good spacing
-                const radius8 = 15 + (index * 4); // Vary radius from center
+            case 8: // Circular course 
+                const angle8 = (index * 1.4) + (holeNumber * 0.3);
+                const radius8 = 15 + (index * 4);
                 x = Math.cos(angle8) * radius8;
                 z = Math.sin(angle8) * radius8;
                 break;
                 
-            case 9: // Complex course (70x70)
-                // 5 mixed obstacles + 2 extra UFOs = varied challenge with planets, stars, and UFOs
+            case 9: // Complex course 
                 const positions9 = [
                     { x: 0, z: 0 },      // Center (UFO)
                     { x: 15, z: 15 },    // Top right (planet)
-                    { x: 5, z: 15 },     // Top center-right (star) - moved right from (-15, 15)
+                    { x: 5, z: 15 },     // Top center-right (star)
                     { x: 15, z: -15 },   // Bottom right (planet)
                     { x: -15, z: -15 }   // Bottom left (star)
                 ];
@@ -402,20 +397,20 @@ export class ObstacleManager {
         
         // Add two extra black holes specifically for hole 5
         if (holeNumber === 5) {
-            blackHoleCount += 2; // Hole 5 now has 3 total black holes instead of 1
+            blackHoleCount += 2;
         }
         
         for (let i = 0; i < blackHoleCount; i++) {
             const blackHole = {
                 mesh: null,
-                radius: 2.0 + Math.random() * 1.0, // 2.0 to 3.0 radius
+                radius: 2.0 + Math.random() * 1.0,
                 initialPosition: new THREE.Vector3(),
                 movementType: 'static',
                 movementSpeed: 0,
                 movementRange: 0,
                 phase: 0,
                 velocity: new THREE.Vector3(),
-                isBlackHole: true // Flag to identify black holes
+                isBlackHole: true 
             };
             
             // Create black hole visual
@@ -434,13 +429,13 @@ export class ObstacleManager {
         // Create black hole group
         const blackHoleGroup = new THREE.Group();
         
-        // Main black sphere (event horizon) - now with subtle glow
+        // Main black sphere
         const sphereGeometry = new THREE.SphereGeometry(blackHole.radius, 32, 32);
         const sphereMaterial = new THREE.MeshStandardMaterial({
             color: 0x000000,
             roughness: 0.1,
             metalness: 0.9,
-            emissive: 0x110033, // Dark purple glow
+            emissive: 0x110033, 
             emissiveIntensity: 0.3
         });
         const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
@@ -449,12 +444,12 @@ export class ObstacleManager {
         // Inner bright glow effect
         const innerGlowGeometry = new THREE.SphereGeometry(blackHole.radius * 1.15, 16, 16);
         const innerGlowMaterial = new THREE.MeshStandardMaterial({
-            color: 0x4400ff, // Bright purple
+            color: 0x4400ff, 
             transparent: true,
             opacity: 0.4,
             emissive: 0x4400ff,
             emissiveIntensity: 0.6,
-            side: THREE.BackSide // Render inside-out for glow effect
+            side: THREE.BackSide 
         });
         const innerGlow = new THREE.Mesh(innerGlowGeometry, innerGlowMaterial);
         blackHoleGroup.add(innerGlow);
@@ -462,7 +457,7 @@ export class ObstacleManager {
         // Outer glow effect
         const outerGlowGeometry = new THREE.SphereGeometry(blackHole.radius * 1.5, 16, 16);
         const outerGlowMaterial = new THREE.MeshStandardMaterial({
-            color: 0x220066, // Purple glow
+            color: 0x220066, 
             transparent: true,
             opacity: 0.2,
             emissive: 0x220066,
@@ -471,7 +466,7 @@ export class ObstacleManager {
         });
         const outerGlow = new THREE.Mesh(outerGlowGeometry, outerGlowMaterial);
         blackHoleGroup.add(outerGlow);
-        
+        // Assign group to black hole mesh
         blackHole.mesh = blackHoleGroup;
         blackHole.mesh.castShadow = true;
         blackHole.mesh.receiveShadow = true;
@@ -529,7 +524,7 @@ export class ObstacleManager {
                 
             case 9: // Complex course
                 const positions9 = [
-                    { x: -18, z: 15 },  // Strategic positions
+                    { x: -18, z: 15 }, 
                     { x: 15, z: -12 },
                     { x: -5, z: -20 }
                 ];
@@ -539,31 +534,32 @@ export class ObstacleManager {
                 break;
                 
             default:
+                // Fallback positioning
                 const angle = (index * 2.5) + 0.8;
                 const distance = 12 + index * 4;
                 x = Math.cos(angle) * distance;
                 z = Math.sin(angle) * distance;
         }
         
-        // Set position (black holes sit on the ground)
+        // Set position
         blackHole.initialPosition.set(x, blackHole.radius * 0.1, z);
     }
     
     createExtraUFOs() {
-        // Create two additional UFOs specifically for hole 9 - positioned to stay within 70x70 course bounds
+        // Create two additional UFOs specifically for hole 9
         const extraUFOPositions = [
-            { x: 25, z: 0 },    // Right side - will move max to x=29, staying within bounds
-            { x: -25, z: 0 }    // Left side - will move max to x=-29, staying within bounds
+            { x: 25, z: 0 }, 
+            { x: -25, z: 0 }   
         ];
-        
+        // Create two extra UFO obstacles
         for (let i = 0; i < extraUFOPositions.length; i++) {
             const obstacle = {
                 mesh: null,
-                radius: 8, // Same large size as all other UFOs
+                radius: 8, 
                 initialPosition: new THREE.Vector3(),
-                movementType: 'circular', // Make them move in circular patterns
+                movementType: 'circular', 
                 movementSpeed: 1 + Math.random() * 2,
-                movementRange: 3, // Reduced range to ensure UFOs stay within course bounds
+                movementRange: 3, 
                 phase: Math.random() * Math.PI * 2,
                 velocity: new THREE.Vector3(),
                 objectType: 'ufo'
@@ -586,11 +582,11 @@ export class ObstacleManager {
         // Create one additional UFO specifically for hole 8
         const obstacle = {
             mesh: null,
-            radius: 8, // Same large size as all other UFOs
+            radius: 8,
             initialPosition: new THREE.Vector3(),
-            movementType: 'static', // Stationary UFO
-            movementSpeed: 0, // No movement
-            movementRange: 0, // No movement range
+            movementType: 'static', 
+            movementSpeed: 0, 
+            movementRange: 0, 
             phase: 0,
             velocity: new THREE.Vector3(),
             objectType: 'ufo'
@@ -611,21 +607,21 @@ export class ObstacleManager {
         // Create UFO group for flying saucer
         const ufoGroup = new THREE.Group();
         
-        // Main saucer body (flattened sphere)
+        // Main saucer body 
         const saucerGeometry = new THREE.SphereGeometry(obstacle.radius, 32, 16);
         const saucerMaterial = new THREE.MeshStandardMaterial({
-            color: 0xc0c0c0, // Metallic silver
+            color: 0xc0c0c0, 
             roughness: 0.2,
             metalness: 0.9
         });
         const saucer = new THREE.Mesh(saucerGeometry, saucerMaterial);
-        saucer.scale.y = 0.3; // Flatten to create classic saucer shape
+        saucer.scale.y = 0.3; 
         ufoGroup.add(saucer);
         
         // Top dome
         const domeGeometry = new THREE.SphereGeometry(obstacle.radius * 0.4, 16, 16);
         const domeMaterial = new THREE.MeshStandardMaterial({
-            color: 0x4169e1, // Blue tinted dome
+            color: 0x4169e1, 
             roughness: 0.1,
             metalness: 0.8,
             transparent: true,
@@ -633,29 +629,29 @@ export class ObstacleManager {
         });
         const dome = new THREE.Mesh(domeGeometry, domeMaterial);
         dome.position.y = obstacle.radius * 0.2;
-        dome.scale.y = 0.8; // Slightly flatten dome
+        dome.scale.y = 0.8; 
         ufoGroup.add(dome);
         
         // Green tractor beam pointing downward from UFO base
         const beamGeometry = new THREE.ConeGeometry(
-            obstacle.radius * 0.5, // Bottom radius (wide end at bottom)
-            obstacle.radius * 0.8, // Height (beam length - shorter)
-            16, // Radial segments
-            1,  // Height segments
-            true // Open ended (hollow cone)
+            obstacle.radius * 0.5,
+            obstacle.radius * 0.8, 
+            16, 
+            1,  
+            true 
         );
         const beamMaterial = new THREE.MeshStandardMaterial({
-            color: 0x00ff00, // Bright green
+            color: 0x00ff00, 
             roughness: 0.1,
             metalness: 0.1,
             transparent: true,
             opacity: 0.3,
-            emissive: 0x002200, // Glowing green
+            emissive: 0x002200, 
             side: THREE.DoubleSide
         });
         const beam = new THREE.Mesh(beamGeometry, beamMaterial);
         beam.position.y = -obstacle.radius * 0.5; // Position at UFO base
-        beam.rotation.x = 0; // Natural downward orientation (point at top)
+        beam.rotation.x = 0; 
         ufoGroup.add(beam);
         
         // Add glowing lights around the edge
@@ -663,13 +659,13 @@ export class ObstacleManager {
         for (let i = 0; i < lightCount; i++) {
             const lightGeometry = new THREE.SphereGeometry(obstacle.radius * 0.05, 8, 8);
             const lightMaterial = new THREE.MeshStandardMaterial({
-                color: 0x00ff00, // Green alien lights
+                color: 0x00ff00, 
                 roughness: 0.1,
                 metalness: 0.2,
-                emissive: 0x004400 // Glowing effect
+                emissive: 0x004400 
             });
             const light = new THREE.Mesh(lightGeometry, lightMaterial);
-            
+            // Position lights evenly around saucer edge
             const angle = (i / lightCount) * Math.PI * 2;
             light.position.x = Math.cos(angle) * obstacle.radius * 0.85;
             light.position.z = Math.sin(angle) * obstacle.radius * 0.85;
@@ -683,12 +679,13 @@ export class ObstacleManager {
         obstacle.mesh.receiveShadow = true;
     }
     
+    // Update obstacle positions and animations
     update(delta) {
         this.time += delta;
-        
+        // Update each obstacle
         for (const obstacle of this.obstacles) {
             const prevPos = obstacle.mesh.position.clone();
-            
+            // Update position based on movement type
             switch (obstacle.movementType) {
                 case 'oscillate':
                     // Side to side movement
@@ -715,7 +712,7 @@ export class ObstacleManager {
             // Add space-themed rotations
             switch (obstacle.objectType) {
                 case 'planet':
-                    // Planets rotate on their axis (only Y-axis to keep rings stable)
+                    // Planets rotate on their axis
                     obstacle.mesh.rotation.y += delta * 0.5;
                     
                     // Keep rings positioned at planet location but stationary
@@ -732,10 +729,10 @@ export class ObstacleManager {
                     break;
                 case 'ufo':
                     // UFOs hover and rotate mysteriously
-                    obstacle.mesh.rotation.y += delta * 1.5; // Faster rotation for alien tech
+                    obstacle.mesh.rotation.y += delta * 1.5; 
                     obstacle.mesh.position.y = obstacle.initialPosition.y + Math.sin(this.time * 2) * 0.3; // Hovering motion
                     obstacle.mesh.rotation.x = Math.sin(this.time * 1.2) * 0.1; // Slight wobble
-                    obstacle.mesh.rotation.z = Math.cos(this.time * 0.8) * 0.1; // Alien flight pattern
+                    obstacle.mesh.rotation.z = Math.cos(this.time * 0.8) * 0.1; 
                     break;
             }
             

@@ -1,6 +1,7 @@
 /**
  * Space Golf - Main Entry Point
  * A space-themed 3D mini-golf game built with Three.js
+ * Used copilot to help
  */
 
 import { Game } from './modules/game.js';
@@ -8,28 +9,18 @@ import { Game } from './modules/game.js';
 // Initialize the game when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     try {
-        console.log('DOM loaded, starting game...');
         const canvas = document.getElementById('game-canvas');
-        console.log('Canvas element:', canvas);
-        
         const game = new Game(canvas);
-        console.log('Game instance created:', game);
         
         // Make game globally accessible for HTML button handlers
         window.gameInstance = game;
         
         // Robust scorecard function that directly shows modal and populates it
         window.showScorecardRobust = function() {
-            console.log('showScorecardRobust called at', Date.now());
-            
+        
             const modal = document.getElementById('scorecard-modal');
             const content = document.getElementById('scorecard-content');
             const totals = document.getElementById('scorecard-totals');
-            
-            if (!modal || !content || !totals) {
-                console.error('Missing scorecard modal elements');
-                return;
-            }
             
             // Get game data directly from global instance
             if (!window.gameInstance) {
@@ -38,8 +29,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             const game = window.gameInstance;
-            console.log('Game scorecard data:', game.scorecard);
-            console.log('Completed holes:', game.completedHoles ? Array.from(game.completedHoles) : 'undefined');
             
             // Build scorecard content directly
             let scorecardHTML = '<table style="width: 100%; border-collapse: collapse;">';
@@ -53,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let totalPar = 0;
             let totalStrokes = 0;
             let completedCount = 0;
-            
+            // Assume 9 holes
             for (let hole = 1; hole <= 9; hole++) {
                 // Try to get the actual par for the hole, fallback to 3
                 let holePar = 3;
@@ -62,25 +51,25 @@ document.addEventListener('DOMContentLoaded', () => {
                         const holeConfig = game.getHoleConfigForScorecard(hole);
                         holePar = holeConfig ? holeConfig.par : 3;
                     }
+                    // Fallback in case method is not available
                 } catch (e) {
-                    console.log('Could not get hole config, using default par 3');
                     holePar = 3;
                 }
-                
+                // Check if hole is completed
                 const isCompleted = game.completedHoles && game.completedHoles.has(hole);
                 const isCurrent = hole === game.currentHole;
                 
                 totalPar += holePar;
-                
+                // Calculate row style
                 let rowStyle = 'padding: 8px; border-bottom: 1px solid rgba(255, 107, 53, 0.3);';
                 if (isCurrent) {
                     rowStyle += 'background: rgba(255, 107, 53, 0.1);';
                 }
-                
+                // Build row
                 scorecardHTML += '<tr>';
                 scorecardHTML += `<td style="${rowStyle}">${hole}${isCurrent ? ' (current)' : ''}</td>`;
                 scorecardHTML += `<td style="${rowStyle} text-align: center;">${holePar}</td>`;
-                
+                // Populate score and result
                 if (isCompleted && game.scorecard && game.scorecard[hole]) {
                     const score = game.scorecard[hole];
                     totalStrokes += score.strokes;
@@ -92,7 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (diff < 0) scoreColor = '#4CAF50'; // Under par - green
                     else if (diff === 0) scoreColor = '#2196F3'; // Par - blue
                     else scoreColor = '#FF9800'; // Over par - orange
-                    
+                    // Add score and result cells
                     scorecardHTML += `<td style="${rowStyle} text-align: center; color: ${scoreColor}; font-weight: bold;">${score.strokes}</td>`;
                     scorecardHTML += `<td style="${rowStyle}">${score.score}</td>`;
                 } else {
@@ -101,14 +90,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 scorecardHTML += '</tr>';
             }
-            
+            // Close table
             scorecardHTML += '</table>';
             content.innerHTML = scorecardHTML;
             
             // Update totals
             let totalsHTML = `<div>Course Par: ${totalPar}</div>`;
             totalsHTML += `<div>Holes Completed: ${completedCount} / 9</div>`;
-            
+            // Only show current score if at least one hole completed
             if (completedCount > 0) {
                 const actualParForCompleted = Object.values(game.scorecard || {}).reduce((sum, score) => sum + score.par, 0);
                 const realDiff = totalStrokes - actualParForCompleted;
@@ -122,36 +111,29 @@ document.addEventListener('DOMContentLoaded', () => {
             totals.innerHTML = totalsHTML;
             
             // Show the modal directly
-            console.log('Showing modal directly...');
             modal.style.display = 'block';
-            console.log('Modal shown successfully');
         };
-        
+        // Robust hide scorecard function
         window.hideScorecardRobust = function() {
-            console.log('hideScorecardRobust called');
-            
+            // Get modal and content elements
             const modal = document.getElementById('scorecard-modal');
             if (modal) {
-                console.log('Hiding modal directly...');
                 modal.style.display = 'none';
-                console.log('Modal hidden successfully');
             } else {
                 console.error('Modal not found for hiding');
             }
         };
         
-
-        
         // Mode switching
         const btnPrototype = document.getElementById('btn-prototype');
         const btnFull = document.getElementById('btn-full');
-        
+        // Initial active state
         btnPrototype.addEventListener('click', () => {
             btnPrototype.classList.add('active');
             btnFull.classList.remove('active');
             game.setMode('prototype');
         });
-        
+        // Full mode button
         btnFull.addEventListener('click', () => {
             btnFull.classList.add('active');
             btnPrototype.classList.remove('active');
@@ -210,11 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Scorecard functionality now uses direct onclick handlers in HTML
         
         // Start the game
-        console.log('Initializing game...');
         game.init();
-        console.log('Starting game...');
         game.start();
-        console.log('Game started successfully');
     } catch (error) {
         console.error('Error starting game:', error);
         console.error('Error stack:', error.stack);

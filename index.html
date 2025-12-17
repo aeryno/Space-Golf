@@ -1,3 +1,9 @@
+/**
+ * Space Golf - Main HTML file
+ * This file sets up the basic structure and includes necessary scripts and styles.
+ * Had help from copilot
+ */
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -467,7 +473,7 @@
             const startScreen = document.getElementById('start-screen');
             startScreen.style.opacity = '0';
             startScreen.style.transition = 'opacity 1s ease-out';
-            
+            // After fade out, hide the start screen
             setTimeout(() => {
                 startScreen.style.display = 'none';
                 document.body.classList.remove('start-screen-active');
@@ -478,7 +484,7 @@
         function createStars() {
             const starsContainer = document.querySelector('.start-screen-stars');
             const starCount = 50;
-            
+            // Generate stars
             for (let i = 0; i < starCount; i++) {
                 const star = document.createElement('div');
                 star.className = 'star';

@@ -1,9 +1,11 @@
 /**
  * Input Handler
  * Handles keyboard and mobile touch controls for aiming and shooting
+ * Used copilot to help
  */
 
 export class InputHandler {
+    // Initialize with references to ball and camera controller
     constructor(ball, cameraController, game = null) {
         this.ball = ball;
         this.cameraController = cameraController;
@@ -36,12 +38,12 @@ export class InputHandler {
         this.setupKeyboardControls();
         this.setupTouchControls();
     }
-    
+    // Keyboard event listeners
     setupKeyboardControls() {
         window.addEventListener('keydown', (e) => this.onKeyDown(e));
         window.addEventListener('keyup', (e) => this.onKeyUp(e));
     }
-    
+    // Handle key down events
     onKeyDown(event) {
         switch (event.code) {
             case 'ArrowLeft':
@@ -73,7 +75,7 @@ export class InputHandler {
                 break;
         }
     }
-    
+    // Handle key up events
     onKeyUp(event) {
         switch (event.code) {
             case 'ArrowLeft':
@@ -99,7 +101,7 @@ export class InputHandler {
                 break;
         }
     }
-    
+    // Touch event listeners
     setupTouchControls() {
         const canvas = document.getElementById('game-canvas');
         
@@ -112,7 +114,7 @@ export class InputHandler {
         const btnLeft = document.getElementById('touch-left');
         const btnRight = document.getElementById('touch-right');
         const btnShoot = document.getElementById('touch-shoot');
-        
+
         if (btnLeft) {
             btnLeft.addEventListener('touchstart', () => { this.keys.left = true; });
             btnLeft.addEventListener('touchend', () => { this.keys.left = false; });
@@ -137,7 +139,7 @@ export class InputHandler {
             });
         }
     }
-    
+    // Touch event handlers
     onTouchStart(event) {
         if (event.touches.length === 1) {
             this.touchStartX = event.touches[0].clientX;
@@ -146,7 +148,7 @@ export class InputHandler {
             event.preventDefault();
         }
     }
-    
+    // Handle touch move for aiming
     onTouchMove(event) {
         if (this.isTouching && event.touches.length === 1) {
             const deltaX = event.touches[0].clientX - this.touchStartX;
@@ -164,13 +166,13 @@ export class InputHandler {
             event.preventDefault();
         }
     }
-    
+    // Handle touch end
     onTouchEnd(event) {
         this.isTouching = false;
     }
     
     update(delta) {
-        // Handle camera rotation (aiming)
+        // Handle camera rotation
         if (this.keys.left) {
             this.cameraController.rotateLeft(this.aimSpeed * delta);
         }
@@ -194,13 +196,13 @@ export class InputHandler {
             }
         }
     }
-    
+    // Execute the shot
     shoot() {
         if (!this.ball.canShoot()) return;
-        
+        // Shoot the ball in the aimed direction with the charged power
         const direction = this.cameraController.getAimDirection();
         this.ball.shoot(direction, this.power);
-        
+        // Reset charging state
         this.isCharging = false;
         this.power = 0;
         
