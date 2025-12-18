@@ -36,10 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // Build scorecard content directly
             let scorecardHTML = '<table style="width: 100%; border-collapse: collapse;">';
             scorecardHTML += '<tr style="border-bottom: 2px solid #ff6b35; background: rgba(255, 107, 53, 0.2);">';
-            scorecardHTML += '<th style="padding: 10px; text-align: left;">Hole</th>';
-            scorecardHTML += '<th style="padding: 10px; text-align: center;">Par</th>';
-            scorecardHTML += '<th style="padding: 10px; text-align: center;">Score</th>';
-            scorecardHTML += '<th style="padding: 10px; text-align: left;">Result</th>';
+            scorecardHTML += '<th style="padding: 10px; text-align: left; color: white;">Hole</th>';
+            scorecardHTML += '<th style="padding: 10px; text-align: center; color: white;">Par</th>';
+            scorecardHTML += '<th style="padding: 10px; text-align: center; color: white;">Score</th>';
+            scorecardHTML += '<th style="padding: 10px; text-align: left; color: white;">Result</th>';
             scorecardHTML += '</tr>';
             
             let totalPar = 0;
@@ -64,7 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 totalPar += holePar;
                 // Calculate row style
-                let rowStyle = 'padding: 8px; border-bottom: 1px solid rgba(255, 107, 53, 0.3);';
+                let rowStyle = 'padding: 8px; border-bottom: 1px solid rgba(255, 107, 53, 0.3); color: white;';
                 if (isCurrent) {
                     rowStyle += 'background: rgba(255, 107, 53, 0.1);';
                 }
