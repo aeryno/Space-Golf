@@ -743,20 +743,28 @@ export class Course {
         const innerRadius = config.groundSize.innerRadius;
         const wallThickness = 0.3;
         const wallHeight = 0.8;
-        const safetyMargin = 8.0;
+        const safetyMargin = 3.0; // Reduced safety margin to make bounds more strict
         
         // Calculate distance from center
         const distanceFromCenter = Math.sqrt(pos.x * pos.x + pos.z * pos.z);
         
-        // Ball is in bounds if it's in the donut ring (plus safety margin)
-        const inDonutRing = (distanceFromCenter >= innerRadius - wallThickness - safetyMargin) && 
-                           (distanceFromCenter <= outerRadius + wallThickness + safetyMargin);
+        // Ball is out if it's outside the outer radius or inside the inner radius
+        const outsideOuter = distanceFromCenter > (outerRadius + wallThickness + safetyMargin);
+        const insideInner = distanceFromCenter < (innerRadius - wallThickness - safetyMargin);
+        const belowGround = pos.y < -3; // Fall detection
         
-        // Ball is out if outside the donut ring AND below wall height, or falls way below
-        if ((!inDonutRing && pos.y <= wallHeight) || pos.y < -5) {
-            return true;
+        // Add debug logging
+        if (outsideOuter || insideInner || belowGround) {
+            console.log('Donut bounds violation:', {
+                distanceFromCenter,
+                outsideOuter,
+                insideInner,
+                belowGround,
+                pos: {x: pos.x, y: pos.y, z: pos.z}
+            });
         }
-        return false;
+        
+        return outsideOuter || insideInner || belowGround;
     }
     
     clearCourse() {

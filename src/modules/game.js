@@ -306,8 +306,8 @@ export class Game {
     }
     // Check for various collisions
     checkCollisions() {
-        // Check if ball enters the center hole on hole 6 (donut course)
-        if (this.currentHole === 6) {
+        // Check if ball enters the center hole on donut courses (holes 4 and 6)
+        if (this.currentHole === 4 || this.currentHole === 6) {
             const ballPos = this.ball.mesh.position;
             const distanceFromCenter = Math.sqrt(ballPos.x * ballPos.x + ballPos.z * ballPos.z);
             
@@ -368,6 +368,7 @@ export class Game {
         
         // Check course bounds
         if (this.course.checkBounds(this.ball)) {
+            console.log('Ball went out of bounds, restarting level');
             this.restartLevel();
         }
     }
