@@ -4,7 +4,7 @@
  * Used copilot to help
  */
 
-import * as THREE from 'three';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 import { CameraController } from './camera.js';
 import { Ball } from './ball.js';
 import { Course } from './course.js';
@@ -14,10 +14,13 @@ import { ObstacleManager } from './obstacles.js';
 // Main Game Class
 export class Game {
     constructor(canvas) {
+        console.log('Game constructor called with canvas:', canvas);
         this.canvas = canvas;
         this.mode = 'full'; 
         this.isRunning = false;
+        console.log('Creating THREE.Clock...');
         this.clock = new THREE.Clock();
+        console.log('Game constructor completed');
         
         // Game state
         this.currentHole = 1;
@@ -42,12 +45,19 @@ export class Game {
     
     // Initialize the game
     init() {
+        console.log('Game.init() called');
         this.setupRenderer();
+        console.log('Renderer setup complete');
         this.setupScene();
+        console.log('Scene setup complete');
         this.setupLighting();
+        console.log('Lighting setup complete');
         this.setupCamera();
+        console.log('Camera setup complete');
         this.setupComponents();
+        console.log('Components setup complete');
         this.setupEventListeners();
+        console.log('Event listeners setup complete');
     }
     
     // Setup Three.js renderer

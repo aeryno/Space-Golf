@@ -8,9 +8,12 @@ import { Game } from './modules/game.js';
 
 // Initialize the game when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing game...');
     try {
         const canvas = document.getElementById('game-canvas');
+        console.log('Canvas element found:', canvas);
         const game = new Game(canvas);
+        console.log('Game instance created:', game);
         
         // Make game globally accessible for HTML button handlers
         window.gameInstance = game;
@@ -192,8 +195,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // Scorecard functionality now uses direct onclick handlers in HTML
         
         // Start the game
+        console.log('Initializing game...');
         game.init();
+        console.log('Game initialized, starting...');
         game.start();
+        console.log('Game started successfully');
     } catch (error) {
         console.error('Error starting game:', error);
         console.error('Error stack:', error.stack);

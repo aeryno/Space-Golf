@@ -4,7 +4,7 @@
  * Used copilot to help
  */
 
-import * as THREE from 'three';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 // Import any additional modules if needed
 export class Course {
     // Initialize with scene and mode

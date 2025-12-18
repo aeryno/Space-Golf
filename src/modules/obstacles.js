@@ -4,7 +4,7 @@
  * Used copilot to help
  */
 
-import * as THREE from 'three';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
 // Obstacle Manager Class
 export class ObstacleManager {

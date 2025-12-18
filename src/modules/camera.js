@@ -3,7 +3,7 @@
  * Handles camera positioning and following the ball
  */
 
-import * as THREE from 'three';
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
 
 export class CameraController {
     constructor(canvas) {
